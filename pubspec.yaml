@@ -1,20 +1,24 @@
 name: bbk_ai
-description: BBK AI App
+description: Minimal Flutter starter that builds on GitHub Actions.
 publish_to: "none"
-
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.19.0 <3.0.0"
+  sdk: ">=3.2.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.2
+
+  # (أتركها فاضية الآن بدون حزم طرف ثالث عشان البناء ينجح 100%)
+  # لما نبي نضيف OCR لاحقًا، نرجع نحدّثها.
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
+  assets:
+    # - assets/sample.png
