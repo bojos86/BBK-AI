@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'pages/ocr_page.dart';
-import 'pages/chat_page.dart';
 
-void main() {
-  runApp(const BBKAIApp());
-}
+void main() => runApp(const BBKAIApp());
 
 class BBKAIApp extends StatelessWidget {
   const BBKAIApp({super.key});
@@ -15,14 +11,11 @@ class BBKAIApp extends StatelessWidget {
       title: 'BBK AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF)),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF7F3FF),
       ),
       home: const HomeScreen(),
-      routes: {
-        OcrPage.route: (_) => const OcrPage(),
-        ChatPage.route: (_) => const ChatPage(),
-      },
     );
   }
 }
@@ -33,23 +26,15 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('BBK AI')),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('اختَر ميزة:', style: TextStyle(fontSize: 20)),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: () => Navigator.pushNamed(context, OcrPage.route),
-              child: const Text('📷 OCR (قريبًا)'),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.tonal(
-              onPressed: () => Navigator.pushNamed(context, ChatPage.route),
-              child: const Text('💬 Chat'),
-            ),
-          ],
+      appBar: AppBar(
+        title: const Text('BBK AI'),
+        centerTitle: true,
+      ),
+      body: const Center(
+        child: Text(
+          'Hi 👋\nThis is BBK AI starter screen.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
         ),
       ),
     );
