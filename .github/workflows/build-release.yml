@@ -1,3 +1,6 @@
+- run: flutter clean
+- run: flutter pub get
+
 name: Build Flutter APK (Release)
 
 on:
