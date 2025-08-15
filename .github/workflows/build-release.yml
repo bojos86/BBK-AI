@@ -2,15 +2,13 @@ name: Build Flutter APK (Release)
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    env:
-      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m -Dkotlin.daemon.jvm.options=-Xmx2048m
 
     steps:
       - name: Checkout
@@ -25,15 +23,16 @@ jobs:
       - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
-
-      - name: Flutter version
-        run: flutter --version
+          channel: "stable"
+          cache: true
 
       - name: Ensure Android platform exists
         run: |
-          flutter config --enable-android
-          flutter doctor -v
+          flutter --version
+          if [ ! -d android ]; then
+            echo "No android/ folder found. Creating platforms..."
+            flutter create . --platforms=android
+          fi
 
       - name: Flutter clean
         run: flutter clean
@@ -41,36 +40,26 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
-      # يطبع pubspec ويتأكد أن المسارات الأساسية موجودة
       - name: Quick sanity check
-        run: |
-          echo "==== pubspec.yaml ===="
-          cat pubspec.yaml
-          echo "==== lib/main.dart exists? ===="
-          test -f lib/main.dart && echo OK || (echo "lib/main.dart NOT FOUND" && exit 1)
-          echo "==== android folder exists? ===="
-          test -d android && echo OK || (echo "android folder NOT FOUND" && exit 1)
+        run: flutter analyze || true
 
-      # نبني مع --verbose ونحفظ اللوق بملف لرفعه كـ artifact حتى لو فشل
       - name: Build APK (release)
-        id: build_apk
-        continue-on-error: true
-        run: |
-          set -eo pipefail
-          flutter build apk --release --no-tree-shake-icons --verbose 2>&1 | tee flutter_build.log
+        run: flutter build apk --release
 
-      # لو فشل البناء، نرفع اللوق عشان نعرف وين يوقف بالضبط
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: flutter_build_log
-          path: flutter_build.log
+          path: |
+            build/**/intermediates/**/*.log
+            .dart_tool/**/flutter_build/**/app.*.json
+          if-no-files-found: ignore
 
-      # نرفع الـ APK إذا انبنى
       - name: Upload APK artifact
-        if: ${{ steps.build_apk.outcome == 'success' && hashFiles('build/app/outputs/flutter-apk/app-release.apk') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/*-release.apk
