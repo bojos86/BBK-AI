@@ -1,34 +1,25 @@
 name: bbk_ai
-description: Simple OCR demo (ML Kit) with gallery/camera picker
+description: Minimal Flutter app for CI builds
 publish_to: "none"
-
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
-  flutter: ">=3.19.0"
+  sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-
-  # UI icons
-  cupertino_icons: ^1.0.8
-
-  # OCR (Google ML Kit)
+  cupertino_icons: ^1.0.6
+  # OCR (اختياري – إذا تحتاجه فعلاً)
   google_mlkit_text_recognition: ^0.13.0
-
-  # Pick image from gallery / camera
-  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.2
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
-
-  # حط مجلد للأصول إذا احتجته لاحقًا
-  assets:
-    - assets/
+  # إذا عندك أصول (صور/خطوط) أضفها هنا لاحقاً:
+  # assets:
+  #   - assets/
