@@ -1,24 +1,27 @@
 name: bbk_ai
-description: Minimal Flutter starter that builds on GitHub Actions.
+description: BBK OCR UAT app with camera/gallery + OCR + strict field validation
 publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.2.0 <4.0.0"
+  sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  # (أتركها فاضية الآن بدون حزم طرف ثالث عشان البناء ينجح 100%)
-  # لما نبي نضيف OCR لاحقًا، نرجع نحدّثها.
+  # اختيار صورة من الكاميرا أو المعرض (يشتغل على أندرويد بدون إعدادات معقدة)
+  image_picker: ^1.0.7
+
+  # OCR على الجهاز (ML Kit)
+  google_mlkit_text_recognition: ^0.13.0
+
+  # تنسيق أرقام وكلمات بسيطة
+  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
-  assets:
-    # - assets/sample.png
