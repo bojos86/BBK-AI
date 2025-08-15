@@ -1,7 +1,6 @@
 name: bbk_ai
-description: BBK OCR UAT app with camera/gallery + OCR + strict field validation
+description: BBK AI OCR UAT
 publish_to: "none"
-version: 1.0.0+1
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -9,15 +8,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-  # اختيار صورة من الكاميرا أو المعرض (يشتغل على أندرويد بدون إعدادات معقدة)
-  image_picker: ^1.0.7
-
-  # OCR على الجهاز (ML Kit)
-  google_mlkit_text_recognition: ^0.13.0
-
-  # تنسيق أرقام وكلمات بسيطة
-  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
