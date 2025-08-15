@@ -2,8 +2,7 @@ name: Build Flutter APK (Release)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -26,11 +25,12 @@ jobs:
           channel: "stable"
           cache: true
 
+      - name: Flutter version
+        run: flutter --version
+
       - name: Ensure Android platform exists
         run: |
-          flutter --version
           if [ ! -d android ]; then
-            echo "No android/ folder found. Creating platforms..."
             flutter create . --platforms=android
           fi
 
@@ -41,25 +41,13 @@ jobs:
         run: flutter pub get
 
       - name: Quick sanity check
-        run: flutter analyze || true
+        run: dart analyze || true
 
       - name: Build APK (release)
         run: flutter build apk --release
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter_build_log
-          path: |
-            build/**/intermediates/**/*.log
-            .dart_tool/**/flutter_build/**/app.*.json
-          if-no-files-found: ignore
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/flutter-apk/*-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
