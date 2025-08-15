@@ -34,26 +34,9 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
-      # (اختياري) فحص سريع – ما يوقف البناء لو فيه وارننغ
       - name: Quick sanity check
         run: dart analyze || true
 
-      # 5) تأكد أن مجلد Android موجود (بدون overwrite)
-      - name: Ensure Android platform exists (no overwrite)
-        run: |
-          if [ ! -d android ]; then
-            flutter create . --platforms=android
-          else
-            echo "Android folder exists; skipping flutter create."
-          fi
-
-      # 6) بناء APK إصدار
-      - name: Build APK (release)
-        run: flutter build apk --release
-
-      # 7) رفع ملف الـAPK كنتيجة (artifact)
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+      # 5) تحديث آمن لمجلد android فقط
+      #    نحفظ lib/ و pubspec.yaml مؤقتًا ثم نرجعهم
+      - name: Modernize Android project (safe)
