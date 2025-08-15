@@ -1,6 +1,17 @@
+name: Build Flutter APK
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "lib/**"
+      - "pubspec.yaml"
+      - ".github/workflows/**"
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -14,6 +25,7 @@ jobs:
       - name: Flutter doctor
         run: flutter doctor -v
 
+      # مهم: توليد هيكل أندرويد قبل Java/Gradle
       - name: Ensure Android platform exists
         run: flutter create . --platforms=android
 
@@ -34,3 +46,4 @@ jobs:
         with:
           name: bbk_ai_debug_apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+```0
