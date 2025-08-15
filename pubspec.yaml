@@ -1,17 +1,30 @@
 name: bbk_ai
-description: Minimal Flutter app for CI builds
+description: BBK AI Flutter App
 publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.4.0 <4.0.0"
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
-  # OCR (اختياري – إذا تحتاجه فعلاً)
-  google_mlkit_text_recognition: ^0.13.0
+
+  # مكتبات أساسية
+  cupertino_icons: ^1.0.8
+
+  # مكتبات OCR للتعرف على النصوص
+  google_mlkit_text_recognition: ^0.12.0
+  google_mlkit_commons: ^0.4.0
+
+  # مكتبات التصوير
+  image_picker: ^1.0.8
+
+  # إدارة الحالة (اختياري)
+  provider: ^6.1.2
+
+  # أي مكتبات إضافية تحتاجها
+  path_provider: ^2.1.4
 
 dev_dependencies:
   flutter_test:
@@ -20,6 +33,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # إذا عندك أصول (صور/خطوط) أضفها هنا لاحقاً:
-  # assets:
-  #   - assets/
+
+  assets:
+    - assets/images/
+    - assets/icons/
