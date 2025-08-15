@@ -2,12 +2,15 @@ name: Build Flutter APK (Release)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    env:
+      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m -Dkotlin.daemon.jvm.options=-Xmx2048m
 
     steps:
       - name: Checkout
@@ -24,88 +27,50 @@ jobs:
         with:
           channel: stable
 
-      # (اختياري) لو مشروعك ما فيه مجلد android تم إنشاؤه قبل
+      - name: Flutter version
+        run: flutter --version
+
       - name: Ensure Android platform exists
         run: |
-          if [ ! -d android ]; then
-            flutter create .
-          fi
+          flutter config --enable-android
+          flutter doctor -v
 
-      - name: Flutter clean & pub get
+      - name: Flutter clean
+        run: flutter clean
+
+      - name: Get packages
+        run: flutter pub get
+
+      # يطبع pubspec ويتأكد أن المسارات الأساسية موجودة
+      - name: Quick sanity check
         run: |
-          flutter clean
-          flutter pub get
+          echo "==== pubspec.yaml ===="
+          cat pubspec.yaml
+          echo "==== lib/main.dart exists? ===="
+          test -f lib/main.dart && echo OK || (echo "lib/main.dart NOT FOUND" && exit 1)
+          echo "==== android folder exists? ===="
+          test -d android && echo OK || (echo "android folder NOT FOUND" && exit 1)
 
-      # يكتب build.gradle جديد في android/app/ مع إعدادات حديثة وتوقيع افتراضي
-      - name: Patch android/app/build.gradle
-        shell: bash
-        run: |
-          mkdir -p android/app
-          cat > android/app/build.gradle <<'EOF'
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              // Flutter Gradle plugin (حديث)
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-
-          android {
-              namespace "com.example.bbk_ai"
-              compileSdk 34
-
-              defaultConfig {
-                  applicationId "com.example.bbk_ai"
-                  minSdk 21
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-                  multiDexEnabled true
-              }
-
-              signingConfigs {
-                  // نستخدم debug keystore للتوقيع الافتراضي على CI
-                  debug {
-                      storeFile file(System.getenv("HOME") + "/.android/debug.keystore")
-                      storePassword "android"
-                      keyAlias "androiddebugkey"
-                      keyPassword "android"
-                  }
-                  release {
-                      storeFile file(System.getenv("HOME") + "/.android/debug.keystore")
-                      storePassword "android"
-                      keyAlias "androiddebugkey"
-                      keyPassword "android"
-                  }
-              }
-
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.release
-                      // نوقف التصغير عشان نتجنب أخطاء R8 مؤقتاً
-                      minifyEnabled false
-                      shrinkResources false
-                  }
-              }
-
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-              kotlinOptions {
-                  jvmTarget = '17'
-              }
-          }
-
-          dependencies {
-              implementation 'androidx.multidex:multidex:2.0.1'
-          }
-          EOF
-
+      # نبني مع --verbose ونحفظ اللوق بملف لرفعه كـ artifact حتى لو فشل
       - name: Build APK (release)
-        run: flutter build apk --release --verbose
+        id: build_apk
+        continue-on-error: true
+        run: |
+          set -eo pipefail
+          flutter build apk --release --no-tree-shake-icons --verbose 2>&1 | tee flutter_build.log
 
-      - name: Upload APK artifact
+      # لو فشل البناء، نرفع اللوق عشان نعرف وين يوقف بالضبط
+      - name: Upload build log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bbk_ai-release-apk
+          name: flutter_build_log
+          path: flutter_build.log
+
+      # نرفع الـ APK إذا انبنى
+      - name: Upload APK artifact
+        if: ${{ steps.build_apk.outcome == 'success' && hashFiles('build/app/outputs/flutter-apk/app-release.apk') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
