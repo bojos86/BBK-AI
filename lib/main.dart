@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-void main() => runApp(const BBKAIApp());
+void main() {
+  runApp(const BBKAIApp());
+}
 
 class BBKAIApp extends StatelessWidget {
   const BBKAIApp({super.key});
@@ -11,9 +13,8 @@ class BBKAIApp extends StatelessWidget {
       title: 'BBK AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF7C4DFF)),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF7F3FF),
       ),
       home: const HomeScreen(),
     );
@@ -27,15 +28,19 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('BBK AI'),
-        centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        title: const Text('BBK AI — NEW UI ✅'),
       ),
       body: const Center(
         child: Text(
-          'Hi 👋\nThis is BBK AI starter screen.',
+          'Hello from the NEW build!\n(v1.0.1+2)',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: const Icon(Icons.check),
       ),
     );
   }
