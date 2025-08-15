@@ -27,27 +27,22 @@ jobs:
       - name: Flutter version
         run: flutter --version
 
-      # لو مجلد android مش موجود أنشئه (مرة أولى فقط)
-      - name: Ensure Android platform exists (no overwrite)
+      # إعادة إنشاء مجلد android كامل بنسخة مدعومة
+      - name: Recreate Android folder (safe)
         run: |
-          if [ ! -d android ]; then
-            flutter create . --platforms=android
-          fi
+          mv lib lib_temp
+          mv assets assets_temp || true
+          mv pubspec.yaml pubspec_temp.yaml
+          flutter create . --platforms=android --overwrite
+          mv lib_temp lib
+          mv assets_temp assets || true
+          mv pubspec_temp.yaml pubspec.yaml
 
       - name: Get packages
         run: flutter pub get
 
-      # مهم: تحديث ملفات الأندرويد (Gradle جديد) لمنع unsupported project
-      - name: Modernize Android project (safe)
-        run: flutter create . --platforms=android --overwrite
-
-      - name: Flutter clean (deep)
-        run: |
-          flutter clean
-          flutter pub get
-
-      - name: Quick sanity check
-        run: dart analyze || true
+      - name: Flutter clean
+        run: flutter clean
 
       - name: Build APK (release)
         run: flutter build apk --release --no-tree-shake-icons
