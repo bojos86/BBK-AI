@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'pages/ocr_page.dart';
+import 'pages/chat_page.dart';
 
 void main() {
   runApp(const BBKAIApp());
@@ -17,6 +19,10 @@ class BBKAIApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const HomeScreen(),
+      routes: {
+        OcrPage.route: (_) => const OcrPage(),
+        ChatPage.route: (_) => const ChatPage(),
+      },
     );
   }
 }
@@ -32,20 +38,16 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'أهلاً 👋\nواجهة BBK جاهزة',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 20),
-            ),
+            const Text('اختَر ميزة:', style: TextStyle(fontSize: 20)),
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: () {
-                // TODO: ودّينا لصفحة الـ OCR أو الشات لاحقاً
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('قريباً ✨')),
-                );
-              },
-              child: const Text('ابدأ'),
+              onPressed: () => Navigator.pushNamed(context, OcrPage.route),
+              child: const Text('📷 OCR (قريبًا)'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonal(
+              onPressed: () => Navigator.pushNamed(context, ChatPage.route),
+              child: const Text('💬 Chat'),
             ),
           ],
         ),
