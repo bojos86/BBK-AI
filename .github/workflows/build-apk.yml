@@ -1,13 +1,13 @@
 name: Build Flutter APK
 
 on:
+  workflow_dispatch: {}
   push:
-    branches: [ main ]
     paths:
       - "lib/**"
       - "pubspec.yaml"
       - ".github/workflows/**"
-  workflow_dispatch:
+      - "android/**"
 
 jobs:
   build:
@@ -33,12 +33,29 @@ jobs:
       - name: Flutter version
         run: flutter --version
 
-      # يجهّز مشروع أندرويد داخل الريبو لو مش موجود
       - name: Ensure Android platform exists
         run: flutter create . --platforms=android
 
       - name: Fetch packages
         run: flutter pub get
+
+      - name: Cache Flutter pub
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            **/.dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
 
       - name: Build APK (release)
         run: flutter build apk --release
