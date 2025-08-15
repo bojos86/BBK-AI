@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace "com.example.bbk_ai"
+    namespace "com.bbk.ai"
     compileSdkVersion 34
 
     defaultConfig {
-        applicationId "com.example.bbk_ai"
+        applicationId "com.bbk.ai"
         minSdkVersion 21
         targetSdkVersion 34
         versionCode 1
@@ -19,9 +19,9 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
-            signingConfig signingConfigs.debug
         }
         debug {
             debuggable true
@@ -30,11 +30,11 @@ android {
 
     packagingOptions {
         resources {
-            excludes += ['META-INF/*']
+            excludes += ['/META-INF/{AL2.0,LGPL2.1}']
         }
     }
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
+    implementation "androidx.multidex:multidex:2.0.1"
 }
