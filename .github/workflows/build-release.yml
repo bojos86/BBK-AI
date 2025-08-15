@@ -10,24 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2) Java 17
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
-      # 3) Flutter stable
       - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      # 4) تنظيف + جلب الحزم
+      - name: Flutter version
+        run: flutter --version
+
+      # إنشـاء مجلد android فقط إذا كان مفقود (ما نعيد توليده)
+      - name: Ensure Android platform exists (no overwrite)
+        run: |
+          if [ ! -d android ]; then
+            flutter create . --platforms=android --project-name bbk_ai
+          else
+            echo "Android folder exists; skipping flutter create."
+          fi
+
       - name: Flutter clean
         run: flutter clean
 
@@ -37,6 +45,11 @@ jobs:
       - name: Quick sanity check
         run: dart analyze || true
 
-      # 5) تحديث آمن لمجلد android فقط
-      #    نحفظ lib/ و pubspec.yaml مؤقتًا ثم نرجعهم
-      - name: Modernize Android project (safe)
+      - name: Build APK (release)
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
