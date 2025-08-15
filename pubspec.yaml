@@ -1,7 +1,8 @@
 name: bbk_ai
-description: bbk ai Flutter App
+description: BBK AI Flutter App
 publish_to: "none"
-version: 1.0.0+6
+
+version: 1.0.1+2   # ← غيّرت الرقم عشان APK جديد
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -12,24 +13,13 @@ dependencies:
 
   cupertino_icons: ^1.0.8
 
-  # تصوير من الكاميرا/المعرض
-  image_picker: ^1.0.8
-
-  # OCR
-  google_mlkit_text_recognition: ^0.12.0
-  # لا تضيف google_mlkit_commons هنا
-
-  provider: ^6.1.2
-  path_provider: ^2.1.4
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true
-
-  assets:
-    - assets/images/
-    - assets/icons/
+  # لو لاحقاً تضيف أصول:
+  # assets:
+  #   - assets/images/
