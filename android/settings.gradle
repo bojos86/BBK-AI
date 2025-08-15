@@ -1,0 +1,2 @@
+rootProject.name = "bbk_ai"
+include(":app")
