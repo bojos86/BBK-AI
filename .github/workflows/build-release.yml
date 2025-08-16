@@ -28,7 +28,7 @@ jobs:
       - name: Flutter versions
         run: flutter --version
 
-      # إعداد التوقيع
+      # يجهّز keystore + key.properties بالتوقيع
       - name: Prepare Android signing
         working-directory: android
         env:
@@ -36,23 +36,23 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          set -e
+          # يولّد keystore (لو موجود ما يعيد توليده)
+          if [ ! -f "keystore.jks" ]; then
+            keytool -genkeypair -v \
+              -keystore keystore.jks \
+              -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
+              -keypass "${ANDROID_KEY_PASSWORD}" \
+              -alias "${ANDROID_KEY_ALIAS}" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=BBKAI, OU=Engineering, O=BBK, L=Kuwait, ST=Kuwait, C=KW"
+          fi
 
-          # إنشاء keystore جديد
-          keytool -genkeypair -v \
-            -keystore keystore.jks \
-            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
-            -keypass "${ANDROID_KEY_PASSWORD}" \
-            -alias "${ANDROID_KEY_ALIAS}" \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=${ANDROID_KEY_ALIAS}, OU=CI, O=BBK, L=Kuwait, ST=KW, C=KW"
-
-          # إنشاء ملف key.properties
-          cat > key.properties <<EOF
-          storeFile=keystore.jks
+          # يكتب ملف key.properties ليقرأه Gradle
+          cat > key.properties <<'EOF'
           storePassword=${ANDROID_KEYSTORE_PASSWORD}
           keyPassword=${ANDROID_KEY_PASSWORD}
           keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=keystore.jks
           EOF
 
       - name: Pub get
