@@ -7,3 +7,4 @@ Once confirmed, we will add OCR logic and stricter parsing.
 ```bash
 flutter pub get
 flutter run
+
