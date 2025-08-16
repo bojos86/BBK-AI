@@ -29,3 +29,32 @@ jobs:
         run: flutter --version
 
       - name: Get packages
+        run: flutter pub get
+
+      - name: Generate launcher icons (if configured)
+        run: |
+          if grep -q "flutter_launcher_icons" pubspec.yaml; then
+            flutter pub run flutter_launcher_icons
+          else
+            echo "flutter_launcher_icons not configured. Skipping."
+          fi
+
+      - name: Generate native splash (if configured)
+        run: |
+          if grep -q "flutter_native_splash" pubspec.yaml; then
+            flutter pub run flutter_native_splash:create
+          else
+            echo "flutter_native_splash not configured. Skipping."
+          fi
+
+      - name: Build APK (release, verbose)
+        run: |
+          flutter clean
+          flutter pub get
+          flutter build apk --release --verbose
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
