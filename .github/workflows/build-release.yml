@@ -28,7 +28,15 @@ jobs:
       - name: Flutter versions
         run: flutter --version
 
-      # يولّد keystore + key.properties بالتوقيع اللي حددته
+      # يصلّح منصّات المشروع ويولّد ملفات android/gradlew والـ wrapper لو ناقصين
+      - name: Repair Android wrapper (safe)
+        run: flutter create .
+
+      # تأكد أن gradlew قابل للتنفيذ
+      - name: Ensure gradlew executable
+        run: chmod +x android/gradlew
+
+      # توليد keystore + key.properties باستخدام الأسرار اللي أضفتها
       - name: Prepare Android signing
         working-directory: android
         run: |
@@ -48,8 +56,8 @@ jobs:
           EOF
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD:   ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS:      ${{ secrets.ANDROID_KEY_ALIAS }}
 
       - name: Pub get
         run: flutter pub get
