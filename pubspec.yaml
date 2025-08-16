@@ -2,7 +2,7 @@ name: bbk_ai_app
 description: BBK AI Flutter App
 publish_to: "none"
 
-version: 1.0.1+2   # ← غيّرت الرقم عشان APK جديد
+version: 1.0.1+3  # ← غيّرت الرقم عشان APK جديد
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
