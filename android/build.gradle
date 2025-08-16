@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace "com.example.bbk_ai"
+    namespace "com.example.bbk_ai_app"
     compileSdk 34
 
     defaultConfig {
