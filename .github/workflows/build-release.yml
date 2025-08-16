@@ -25,27 +25,28 @@ jobs:
           channel: "stable"
           cache: true
 
-      # تنظيف المشروع
-      - name: Flutter clean
-        run: flutter clean
-
-      - name: Get packages
-        run: flutter pub get
-
-      # 🔧 أعد إنشاء مجلد android من الصفر دائماً (يتفادى Unsupported Gradle project)
-      - name: Recreate Android folder (force)
+      - name: Install dependencies
         run: |
-          rm -rf android
-          flutter create . --platforms=android --overwrite
-          flutter pub get
+          cd bbk_ai_app
+          flutter pub get -v
 
-      # بناء APK
+      - name: Generate launcher icons (if configured)
+        run: |
+          cd bbk_ai_app
+          flutter pub run flutter_launcher_icons
+
+      - name: Generate native splash (if configured)
+        run: |
+          cd bbk_ai_app
+          flutter pub run flutter_native_splash:create
+
       - name: Build APK (release)
-        run: flutter build apk --release --no-tree-shake-icons
+        run: |
+          cd bbk_ai_app
+          flutter build apk --release --no-tree-shake-icons
 
-      # رفع ملف الـ APK
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: release-apk
+          path: bbk_ai_app/build/app/outputs/flutter-apk/app-release.apk
