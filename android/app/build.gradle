@@ -1,6 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace "com.example.bbk_ai_app"
     compileSdk 34
@@ -14,36 +20,36 @@ android {
         multiDexEnabled true
     }
 
-    // توقيع
     signingConfigs {
         release {
-            def props = new Properties()
-            def propsFile = rootProject.file('key.properties')
-            if (propsFile.exists()) {
-                props.load(new FileInputStream(propsFile))
-                storeFile file(props['storeFile'] ?: "app/upload-keystore.jks")
-                storePassword props['storePassword']
-                keyPassword props['keyPassword']
-                keyAlias props['keyAlias']
+            if (keystoreProperties != null && keystoreProperties.containsKey('storePassword')) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
             minifyEnabled false
-            // لو تبي تضيف Proguard
+            signingConfig signingConfigs.release
+            // لو عندك ProGuard:
             // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
-        debug { }
+        debug {
+            // إعدادات debug الافتراضية
+        }
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = '17' }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 }
 
 dependencies {
