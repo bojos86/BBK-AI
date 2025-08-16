@@ -1,9 +1,10 @@
-name: Build Flutter APK (Release)
+name: build
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - main
+  pull_request:
 
 jobs:
   build:
@@ -13,78 +14,50 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java 17 (Temurin)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Flutter (stable)
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: stable
           cache: true
 
-      - name: Flutter versions
-        run: flutter --version
-
-      # يصلّح منصّات المشروع ويولّد ملفات android/gradlew والـ wrapper لو ناقصين
-      - name: Repair Android wrapper (safe)
-        run: flutter create .
-
-      # تأكد أن gradlew قابل للتنفيذ
-      - name: Ensure gradlew executable
-        run: chmod +x android/gradlew
-
-      # توليد keystore + key.properties باستخدام الأسرار اللي أضفتها
-      - name: Prepare Android signing
-        working-directory: android
-        run: |
-          keytool -genkey -v \
-            -keystore keystore.jks \
-            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
-            -keypass "${ANDROID_KEY_PASSWORD}" \
-            -alias "${ANDROID_KEY_ALIAS}" \
-            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
-            -keyalg RSA -keysize 2048 -validity 10000
-
-          cat > key.properties <<'EOF'
-          storePassword=${ANDROID_KEYSTORE_PASSWORD}
-          keyPassword=${ANDROID_KEY_PASSWORD}
-          keyAlias=${ANDROID_KEY_ALIAS}
-          storeFile=keystore.jks
-          EOF
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD:   ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS:      ${{ secrets.ANDROID_KEY_ALIAS }}
-
-      - name: Pub get
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Generate launcher icons (if configured)
+      # توقيع أندرويد (keystore) - مؤقت للتجربة فقط
+      - name: Prepare Android signing
         run: |
-          if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            flutter pub run flutter_launcher_icons:main
-          else
-            echo "launcher icons not configured. skipping."
-          fi
+          keytool -genkeypair -v \
+            -keystore keystore.jks \
+            -storepass 123456 \
+            -keypass 123456 \
+            -alias upload \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, ST=KW, C=KW"
+          echo "storeFile=keystore.jks" >> android/key.properties
+          echo "storePassword=123456" >> android/key.properties
+          echo "keyPassword=123456" >> android/key.properties
+          echo "keyAlias=upload" >> android/key.properties
 
-      - name: Generate native splash (if configured)
-        run: |
-          if grep -q "flutter_native_splash" pubspec.yaml; then
-            flutter pub run flutter_native_splash:create
-          else
-            echo "native splash not configured. skipping."
-          fi
-
+      # بناء APK مع أمر معدل عشان يبين الأخطاء بدال ما يوقف فجأة
       - name: Build APK (release, verbose)
+        run: flutter build apk --release --no-tree-shake-icons -v || true
+
+      # نطبع آخر 200 سطر من اللوق عشان نعرف السبب الحقيقي للخطأ
+      - name: Show Flutter build logs
         run: |
-          flutter clean
-          flutter build apk --release --no-tree-shake-icons -v
+          echo "==== Showing last 200 lines of logs ===="
+          tail -n 200 ./build/app/outputs/flutter-apk/*.log || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
+          name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
