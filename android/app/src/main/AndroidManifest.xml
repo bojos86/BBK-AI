@@ -3,7 +3,7 @@
     
     <application
         android:name="${applicationName}"
-        android:label="BBK AI"
+        android:label="BBK PAY WITH AI"
         android:icon="@mipmap/ic_launcher">
         
         <activity
