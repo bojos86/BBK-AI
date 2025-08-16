@@ -23,6 +23,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
+          cache: true
 
       - name: Flutter clean
         run: flutter clean
@@ -30,13 +31,22 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
-      # ابني APK بنسخة الإصدار
+      # هذه الخطوة "تحدّث" مجلد android لو كان قديم وتخلّصنا من خطأ unsupported Gradle project
+      - name: Modernize Android project (safe)
+        run: |
+          if [ -d android ]; then
+            echo "Regenerating Android scaffolding (safe overwrite)…"
+            flutter create . --platforms=android --overwrite
+          else
+            echo "No android/ folder found, creating it…"
+            flutter create . --platforms=android
+          fi
+
       - name: Build APK (release)
         run: flutter build apk --release --no-tree-shake-icons
 
-      # ارفع ملف الـ APK كناتج (Artifact)
-      - name: Upload APK artifact
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release.apk
+          name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
