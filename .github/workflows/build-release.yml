@@ -10,27 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) جلب السورس
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # 2) Java 17
       - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 3) Android SDK (أدوات المنصة) + قبول التراخيص
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses
-
-      # 4) Flutter (stable) + كاش
       - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
@@ -38,45 +26,34 @@ jobs:
           cache: true
 
       - name: Flutter versions
-        run: |
-          flutter --version
-          flutter doctor -v
+        run: flutter --version
 
-      # 5) توقيع Android: إنشاء keystore + key.properties
+      # يولّد keystore + key.properties بالتوقيع اللي حددته
       - name: Prepare Android signing
         working-directory: android
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD:   ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS:      ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          # لو كان keystore موجود، لا تعيد إنشائه (للدورات اللاحقة)
-          if [ ! -f keystore.jks ]; then
-            keytool -genkey -v \
-              -keystore keystore.jks \
-              -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
-              -keypass   "${ANDROID_KEY_PASSWORD}" \
-              -alias     "${ANDROID_KEY_ALIAS}" \
-              -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
-              -keyalg RSA -keysize 2048 -validity 10000
-          fi
+          keytool -genkey -v \
+            -keystore keystore.jks \
+            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
+            -keypass "${ANDROID_KEY_PASSWORD}" \
+            -alias "${ANDROID_KEY_ALIAS}" \
+            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
+            -keyalg RSA -keysize 2048 -validity 10000
 
-          cat > key.properties <<EOF
+          cat > key.properties <<'EOF'
           storePassword=${ANDROID_KEYSTORE_PASSWORD}
           keyPassword=${ANDROID_KEY_PASSWORD}
           keyAlias=${ANDROID_KEY_ALIAS}
           storeFile=keystore.jks
           EOF
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
 
-      # 6) تأكد gradlew قابل للتنفيذ (احتياط)
-      - name: Ensure gradlew executable
-        run: chmod +x android/gradlew
-
-      # 7) حزم Flutter
       - name: Pub get
         run: flutter pub get
 
-      # 8) أيقونات — فقط إذا مُفعّل في pubspec.yaml
       - name: Generate launcher icons (if configured)
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
@@ -85,7 +62,6 @@ jobs:
             echo "launcher icons not configured. skipping."
           fi
 
-      # 9) شاشة البداية — فقط إذا مُفعّل في pubspec.yaml
       - name: Generate native splash (if configured)
         run: |
           if grep -q "flutter_native_splash" pubspec.yaml; then
@@ -94,13 +70,11 @@ jobs:
             echo "native splash not configured. skipping."
           fi
 
-      # 10) بناء APK إصدار
       - name: Build APK (release, verbose)
         run: |
           flutter clean
           flutter build apk --release --no-tree-shake-icons -v
 
-      # 11) رفع الناتج كـ Artifact
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
