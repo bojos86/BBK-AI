@@ -23,13 +23,13 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: stable
+          flutter-version: '3.22.2'   # <<< حددنا النسخة
+          channel: stable
           cache: true
 
       - name: Install dependencies
         run: flutter pub get
 
-      # توقيع أندرويد (keystore) - مؤقت للتجربة فقط
       - name: Prepare Android signing
         run: |
           keytool -genkeypair -v \
@@ -46,11 +46,9 @@ jobs:
           echo "keyPassword=123456" >> android/key.properties
           echo "keyAlias=upload" >> android/key.properties
 
-      # بناء APK مع أمر معدل عشان يبين الأخطاء بدال ما يوقف فجأة
       - name: Build APK (release, verbose)
         run: flutter build apk --release --no-tree-shake-icons -v || true
 
-      # نطبع آخر 200 سطر من اللوق عشان نعرف السبب الحقيقي للخطأ
       - name: Show Flutter build logs
         run: |
           echo "==== Showing last 200 lines of logs ===="
