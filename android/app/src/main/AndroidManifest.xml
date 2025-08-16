@@ -19,7 +19,6 @@
             </intent-filter>
         </activity>
 
-        <!-- تستخدمه Flutter embedding V2 -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
