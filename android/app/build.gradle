@@ -1,10 +1,7 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
@@ -20,26 +17,9 @@ android {
         multiDexEnabled true
     }
 
-    signingConfigs {
-        release {
-            if (keystoreProperties != null && keystoreProperties.containsKey('storePassword')) {
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-            }
-        }
-    }
-
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.release
-            // لو عندك ProGuard:
-            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-        debug {
-            // إعدادات debug الافتراضية
         }
     }
 
