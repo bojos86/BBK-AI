@@ -26,9 +26,7 @@ jobs:
           cache: true
 
       - name: Install dependencies
-        run: |
-          cd bbk_ai_app
-          flutter pub get -v
+        run: flutter pub get
 
       - name: Generate launcher icons (if configured)
         run: |
