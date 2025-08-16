@@ -6,11 +6,6 @@ on:
   workflow_dispatch:
 
 jobs:
-- name: Generate launcher icons
-        run: flutter pub run flutter_launcher_icons:main
-
-      - name: Generate native splash
-        run: flutter pub run flutter_native_splash:create
   build:
     runs-on: ubuntu-latest
 
@@ -30,34 +25,17 @@ jobs:
           channel: "stable"
           cache: true
 
-      - name: Flutter clean
-        run: flutter clean
-
-      - name: Get packages
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Quick sanity check
-        run: dart analyze || true
+      - name: Generate launcher icons
+        run: flutter pub run flutter_launcher_icons:main
 
-      # لو android/ مفقود أو قديم، نعيد إنشائه بشكل آمن
-      - name: Ensure Android platform exists (safe)
-        shell: bash
-        run: |
-          if [ ! -d android ]; then
-            echo "android folder missing -> creating"
-            flutter create . --platforms=android --project-name bbk_ai_app --org com.bbk.ai
-          else
-            echo "android folder exists; attempting safe re-create"
-            mv lib lib_temp
-            # لو ما عندك assets عادي بيطوف السطر
-            mv assets assets_temp 2>/dev/null || true
-            rm -rf android
-            flutter create . --platforms=android --project-name bbk_ai --org com.bbk.ai
-            rm -rf lib
-            mv lib_temp lib
-            # رجّع الأصول إن وجدت
-            if [ -d assets_temp ]; then mv assets_temp assets; fi
-          fi
+      - name: Generate native splash
+        run: flutter pub run flutter_native_splash:create
+
+      - name: Flutter clean
+        run: flutter clean
 
       - name: Build APK (release)
         run: flutter build apk --release --no-tree-shake-icons
@@ -65,5 +43,5 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
