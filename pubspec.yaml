@@ -1,6 +1,6 @@
 name: bbk_ai_app
-description: A new Flutter project
-publish_to: "none" # Prevents publishing to pub.dev
+description: BBK AI Flutter App
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
@@ -9,10 +9,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.8
 
-  # أي باكجات إضافية تبيها ضيفها هنا
-  cupertino_icons: ^1.0.6
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
 
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/app_icon.png
+    - assets/splash_logo.png
+    
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
   flutter_native_splash: ^2.4.0
@@ -29,9 +38,3 @@ flutter_native_splash:
   android: true
   ios: false
   android_gravity: center
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
-
-flutter:
-  uses-material-design: true
