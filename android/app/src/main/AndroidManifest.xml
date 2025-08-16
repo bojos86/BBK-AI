@@ -1,10 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.bbk_ai_app">
+    package="com.example.bbk_ai_app">  <!-- عدّل الباكيج إذا لزم -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="bbk_ai_app"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:name="${applicationName}"   <!-- مهم: لا تستخدم FlutterApplication القديم -->
+        android:label="BBK AI"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -15,13 +19,20 @@
             android:windowSoftInputMode="adjustResize">
 
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
+            <!-- لو عندك FlutterNativeSplash سيستبدل الخلفية تلقائيًا -->
+            <meta-data
+                android:name="io.flutter.embedding.android.SplashScreenDrawable"
+                android:resource="@drawable/launch_background" />
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
         </activity>
 
-        <!-- تأكيد استخدام v2 embedding -->
+        <!-- يُعلِم Flutter أنك على الـ v2 embedding -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
