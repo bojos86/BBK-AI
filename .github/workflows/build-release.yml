@@ -22,15 +22,16 @@ jobs:
       - name: Setup Flutter (stable 3.24.3)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.3'   # يجلب Dart >= 3.5
           channel: stable
+          flutter-version: '3.24.3'
           cache: true
 
       - name: Flutter versions
-        run: |
-          flutter --version
-          dart --version
+        run: flutter --version
 
+      # توليد keystore وملف key.properties من الـ Secrets
+      # لازم تكون الأسرار موجودة بالريبو:
+      # ANDROID_KEYSTORE_PASSWORD , ANDROID_KEY_PASSWORD , ANDROID_KEY_ALIAS
       - name: Prepare Android signing
         working-directory: android
         run: |
@@ -72,12 +73,21 @@ jobs:
             echo "native splash not configured. skipping."
           fi
 
+      # نجمع الـ APK ونحفظ لوج مفصل عشان لو صار خطأ نعرضه
       - name: Build APK (release, verbose)
         run: |
+          set -o pipefail
           flutter clean
-          flutter build apk --release --no-tree-shake-icons -v
+          flutter build apk --release --no-tree-shake-icons -v 2>&1 | tee /home/runner/.flutter_build_log
+
+      - name: Show Flutter build logs
+        if: failure()
+        run: |
+          echo "==== Printing Flutter verbose build log ===="
+          [ -f /home/runner/.flutter_build_log ] && tail -n +1 /home/runner/.flutter_build_log || echo "no log file"
 
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
