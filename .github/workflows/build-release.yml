@@ -6,11 +6,6 @@ on:
   workflow_dispatch:
 
 jobs:
-      - name: Generate launcher icons
-        run: flutter pub run flutter_launcher_icons:main
-
-      - name: Generate native splash
-        run: flutter pub run flutter_native_splash:create
   build:
     runs-on: ubuntu-latest
 
