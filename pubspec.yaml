@@ -1,8 +1,7 @@
 name: bbk_ai_app
 description: BBK AI Flutter App
 publish_to: "none"
-
-version: 1.0.1+3  # ← غيّرت الرقم عشان APK جديد
+version: 1.0.0+1
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -10,7 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
@@ -20,6 +18,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # لو لاحقاً تضيف أصول:
+  # لو عندك أصول:
   # assets:
-  #   - assets/images/
+  #   - assets/
