@@ -23,30 +23,20 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          cache: true
 
-      - name: Install dependencies
-        run: |
-          cd bbk_ai_app
-          flutter pub get -v
+      - name: Flutter clean
+        run: flutter clean
 
-      - name: Generate launcher icons (if configured)
-        run: |
-          cd bbk_ai_app
-          flutter pub run flutter_launcher_icons
+      - name: Get packages
+        run: flutter pub get
 
-      - name: Generate native splash (if configured)
-        run: |
-          cd bbk_ai_app
-          flutter pub run flutter_native_splash:create
-
+      # ابني APK بنسخة الإصدار
       - name: Build APK (release)
-        run: |
-          cd bbk_ai_app
-          flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release --no-tree-shake-icons
 
-      - name: Upload Release APK
+      # ارفع ملف الـ APK كناتج (Artifact)
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
-          path: bbk_ai_app/build/app/outputs/flutter-apk/app-release.apk
+          name: app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
