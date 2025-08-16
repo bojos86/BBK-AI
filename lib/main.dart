@@ -13,8 +13,11 @@ class BBKAIApp extends StatelessWidget {
       title: 'BBK AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+  colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8B5CF6)),
+  scaffoldBackgroundColor: const Color(0xFFF8F2FF),
+  useMaterial3: true,
+  fontFamily: 'Roboto', // غيّرها إذا عندك خط
+),
       ),
       home: const HomeScreen(),
     );
