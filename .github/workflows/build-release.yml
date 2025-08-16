@@ -28,28 +28,32 @@ jobs:
       - name: Flutter versions
         run: flutter --version
 
-      # يولّد keystore + key.properties بالتوقيع اللي حددته
+      # إعداد التوقيع
       - name: Prepare Android signing
         working-directory: android
-        run: |
-          keytool -genkey -v \
-            -keystore keystore.jks \
-            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
-            -keypass "${ANDROID_KEY_PASSWORD}" \
-            -alias "${ANDROID_KEY_ALIAS}" \
-            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
-            -keyalg RSA -keysize 2048 -validity 10000
-
-          cat > key.properties <<'EOF'
-          storePassword=${ANDROID_KEYSTORE_PASSWORD}
-          keyPassword=${ANDROID_KEY_PASSWORD}
-          keyAlias=${ANDROID_KEY_ALIAS}
-          storeFile=keystore.jks
-          EOF
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -e
+
+          # إنشاء keystore جديد
+          keytool -genkeypair -v \
+            -keystore keystore.jks \
+            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
+            -keypass "${ANDROID_KEY_PASSWORD}" \
+            -alias "${ANDROID_KEY_ALIAS}" \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=${ANDROID_KEY_ALIAS}, OU=CI, O=BBK, L=Kuwait, ST=KW, C=KW"
+
+          # إنشاء ملف key.properties
+          cat > key.properties <<EOF
+          storeFile=keystore.jks
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          EOF
 
       - name: Pub get
         run: flutter pub get
