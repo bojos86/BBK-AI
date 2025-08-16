@@ -40,7 +40,7 @@ jobs:
         run: |
           if [ ! -d android ]; then
             echo "android folder missing -> creating"
-            flutter create . --platforms=android --project-name bbk_ai --org com.bbk.ai
+            flutter create . --platforms=android --project-name bbk_ai_app --org com.bbk.ai
           else
             echo "android folder exists; attempting safe re-create"
             mv lib lib_temp
