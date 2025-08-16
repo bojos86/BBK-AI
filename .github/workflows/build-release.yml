@@ -1,10 +1,9 @@
-name: build
+name: Build Flutter APK (Release)
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,48 +13,72 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Flutter
+      - name: Setup Flutter (stable 3.24.3)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.2'   # <<< حددنا النسخة
+          flutter-version: '3.24.3'   # يجلب Dart >= 3.5
           channel: stable
           cache: true
+
+      - name: Flutter versions
+        run: |
+          flutter --version
+          dart --version
+
+      - name: Prepare Android signing
+        working-directory: android
+        run: |
+          keytool -genkey -v \
+            -keystore keystore.jks \
+            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
+            -keypass "${ANDROID_KEY_PASSWORD}" \
+            -alias "${ANDROID_KEY_ALIAS}" \
+            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
+            -keyalg RSA -keysize 2048 -validity 10000
+
+          cat > key.properties <<'EOF'
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=keystore.jks
+          EOF
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Prepare Android signing
+      - name: Generate launcher icons (if configured)
         run: |
-          keytool -genkeypair -v \
-            -keystore keystore.jks \
-            -storepass 123456 \
-            -keypass 123456 \
-            -alias upload \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, ST=KW, C=KW"
-          echo "storeFile=keystore.jks" >> android/key.properties
-          echo "storePassword=123456" >> android/key.properties
-          echo "keyPassword=123456" >> android/key.properties
-          echo "keyAlias=upload" >> android/key.properties
+          if grep -q "flutter_launcher_icons" pubspec.yaml; then
+            flutter pub run flutter_launcher_icons:main
+          else
+            echo "launcher icons not configured. skipping."
+          fi
+
+      - name: Generate native splash (if configured)
+        run: |
+          if grep -q "flutter_native_splash" pubspec.yaml; then
+            flutter pub run flutter_native_splash:create
+          else
+            echo "native splash not configured. skipping."
+          fi
 
       - name: Build APK (release, verbose)
-        run: flutter build apk --release --no-tree-shake-icons -v || true
-
-      - name: Show Flutter build logs
         run: |
-          echo "==== Showing last 200 lines of logs ===="
-          tail -n 200 ./build/app/outputs/flutter-apk/*.log || true
+          flutter clean
+          flutter build apk --release --no-tree-shake-icons -v
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
