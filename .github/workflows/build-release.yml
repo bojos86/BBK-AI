@@ -16,27 +16,50 @@ jobs:
       - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
 
       - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
 
-      - name: Show Flutter & Dart versions
+      - name: Flutter versions
         run: flutter --version
 
-      - name: Get packages
+      # يولّد keystore + key.properties بالتوقيع اللي حددته
+      - name: Prepare Android signing
+        working-directory: android
+        run: |
+          keytool -genkey -v \
+            -keystore keystore.jks \
+            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
+            -keypass "${ANDROID_KEY_PASSWORD}" \
+            -alias "${ANDROID_KEY_ALIAS}" \
+            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
+            -keyalg RSA -keysize 2048 -validity 10000
+
+          cat > key.properties <<'EOF'
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=keystore.jks
+          EOF
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+
+      - name: Pub get
         run: flutter pub get
 
       - name: Generate launcher icons (if configured)
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            flutter pub run flutter_launcher_icons
+            flutter pub run flutter_launcher_icons:main
           else
-            echo "flutter_launcher_icons not configured. Skipping."
+            echo "launcher icons not configured. skipping."
           fi
 
       - name: Generate native splash (if configured)
@@ -44,14 +67,13 @@ jobs:
           if grep -q "flutter_native_splash" pubspec.yaml; then
             flutter pub run flutter_native_splash:create
           else
-            echo "flutter_native_splash not configured. Skipping."
+            echo "native splash not configured. skipping."
           fi
 
       - name: Build APK (release, verbose)
         run: |
           flutter clean
-          flutter pub get
-          flutter build apk --release --verbose
+          flutter build apk --release --no-tree-shake-icons -v
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
