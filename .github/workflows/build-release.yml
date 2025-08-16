@@ -25,26 +25,25 @@ jobs:
           channel: "stable"
           cache: true
 
+      # تنظيف المشروع
       - name: Flutter clean
         run: flutter clean
 
       - name: Get packages
         run: flutter pub get
 
-      # هذه الخطوة "تحدّث" مجلد android لو كان قديم وتخلّصنا من خطأ unsupported Gradle project
-      - name: Modernize Android project (safe)
+      # 🔧 أعد إنشاء مجلد android من الصفر دائماً (يتفادى Unsupported Gradle project)
+      - name: Recreate Android folder (force)
         run: |
-          if [ -d android ]; then
-            echo "Regenerating Android scaffolding (safe overwrite)…"
-            flutter create . --platforms=android --overwrite
-          else
-            echo "No android/ folder found, creating it…"
-            flutter create . --platforms=android
-          fi
+          rm -rf android
+          flutter create . --platforms=android --overwrite
+          flutter pub get
 
+      # بناء APK
       - name: Build APK (release)
         run: flutter build apk --release --no-tree-shake-icons
 
+      # رفع ملف الـ APK
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
