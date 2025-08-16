@@ -13,47 +13,62 @@ class BBKAIApp extends StatelessWidget {
       title: 'BBK AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-  colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8B5CF6)),
-  scaffoldBackgroundColor: const Color(0xFFF8F2FF),
-  useMaterial3: true,
-  fontFamily: 'Roboto', // غيّرها إذا عندك خط
-),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF123D7A),
+          primary: const Color(0xFF123D7A),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF8F2FF),
+        useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const HomePage(),
     );
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // ===== AppBar (الهيدر مع البانر) =====
       appBar: AppBar(
-        title: const Text('BBK AI – Home'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'تم التحديث بنجاح ✨',
-              style: TextStyle(fontSize: 22),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('هاي! التطبيق شغّال 👋')),
-                );
-              },
-              child: const Text('جربي الزر'),
-            ),
-          ],
+        automaticallyImplyLeading: false,
+        toolbarHeight: 100, // ارتفاع البانر
+        flexibleSpace: Image.asset(
+          'assets/app_banner.png', // هنا البانر اللي عطيتني صورته
+          fit: BoxFit.cover,
         ),
       ),
+
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'تم التحديث بنجاح ✨',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text('جرّبي الزر'),
+              ),
+            ],
+          ),
+        ),
+      ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         child: const Icon(Icons.add),
