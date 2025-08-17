@@ -10,45 +10,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) جلب الكود
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2) جافا 17
       - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 3) تثبيت Flutter (القناة المستقرة)
-      - name: Setup Flutter (stable)
+      - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          # لو تبين تحديد رقم بعينه:
-          # flutter-version: '3.24.3'
+          flutter-version: 3.35.1
           cache: true
 
       - name: Flutter versions
         run: flutter --version
 
-      # 4) تجهيز التوقيع (يستخدم الأسرار من Settings > Secrets)
+      # 👇 أهم خطوة: إعادة توليد قالب android الحديث داخل المستودع
+      - name: Regenerate modern Android folder
+        run: |
+          flutter create --platforms=android --project-name bbk_ai_app --org com.example --overwrite .
+
+      # تهيئة التوقيع: يَولد keystore ويكتب key.properties
       - name: Prepare Android signing
         working-directory: android
         run: |
-          # ينشئ keystore فقط إذا ما كان موجود
-          if [ ! -f keystore.jks ]; then
-            keytool -genkey -v \
-              -keystore keystore.jks \
-              -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
-              -keypass "${ANDROID_KEY_PASSWORD}" \
-              -alias "${ANDROID_KEY_ALIAS}" \
-              -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
-              -keyalg RSA -keysize 2048 -validity 10000
-          fi
-
-          # يكتب ملف key.properties ليستخدمه Gradle/Flutter
+          keytool -genkey -v \
+            -keystore keystore.jks \
+            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
+            -keypass "${ANDROID_KEY_PASSWORD}" \
+            -alias "${ANDROID_KEY_ALIAS}" \
+            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
+            -keyalg RSA -keysize 2048 -validity 10000
           cat > key.properties <<'EOF'
           storePassword=${ANDROID_KEYSTORE_PASSWORD}
           keyPassword=${ANDROID_KEY_PASSWORD}
@@ -57,40 +53,23 @@ jobs:
           EOF
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD:    ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS:       ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD:      ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS:         ${{ secrets.ANDROID_KEY_ALIAS }}
 
-      # 5) حزم Dart
       - name: Pub get
         run: flutter pub get
 
-      # 6) أيقونات التشغيل (اختياري – يعمل فقط إن كانت مضافة في pubspec.yaml)
-      - name: Generate launcher icons (if configured)
-        run: |
-          if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            flutter pub run flutter_launcher_icons:main
-          else
-            echo "launcher icons not configured. skipping."
-          fi
-
-      # 7) شاشة الإقلاع (اختياري – يعمل فقط إن كانت مضافة)
-      - name: Generate native splash (if configured)
-        run: |
-          if grep -q "flutter_native_splash" pubspec.yaml; then
-            flutter pub run flutter_native_splash:create
-          else
-            echo "native splash not configured. skipping."
-          fi
-
-      # 8) بناء الـ APK (ريليس)
-      - name: Build APK (release)
+      - name: Build APK (release, verbose)
         run: |
           flutter clean
-          flutter build apk --release --no-tree-shake-icons -v
+          flutter build apk --release -v
 
-      # 9) رفع الناتج كـ Artifact
       - name: Upload APK artifact
+        if: always()  # ارفع أي ملف لو موجود حتى لو فشل البناء
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            android/gradle_build.log
+          if-no-files-found: ignore
