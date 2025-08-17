@@ -1,4 +1,4 @@
-name: Build Flutter APK (Release)
+name: Build APK from Fresh Template
 
 on:
   push:
@@ -13,24 +13,70 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java 17 (Temurin)
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
       - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.1"
-          channel: stable
-          cache: true
+          flutter-version: '3.35.1'
+          cache: false
 
-      - name: Flutter doctor
-        run: flutter doctor -v
+      - name: Show Flutter versions
+        run: |
+          flutter --version
+          dart --version
+          ls -la
 
-      - name: Prepare Android signing (keystore + key.properties)
-        working-directory: android
+      # 👇 نحضّر كودك فقط (lib + pubspec + assets) في مجلد src/
+      - name: Stage your Dart code only
+        run: |
+          mkdir -p fresh/src
+          [ -d lib ] && cp -r lib fresh/src/ || true
+          [ -f pubspec.yaml ] && cp pubspec.yaml fresh/src/ || true
+          [ -d assets ] && cp -r assets fresh/src/ || true
+          echo "== staged =="
+          find fresh/src -maxdepth 2 -type f -print || true
+
+      # 👇 ننشئ مشروع Flutter جديد داخل fresh/app (Android فقط)
+      - name: Create fresh Flutter app (android)
+        run: |
+          cd fresh
+          flutter create --platforms=android --project-name bbk_ai_app --org com.example app
+          ls -la app
+
+      # 👇 نركّب كودك على القالب الجديد
+      - name: Overlay your code onto fresh/app
+        run: |
+          set -e
+          cd fresh
+
+          if [ -d src/lib ]; then
+            rm -rf app/lib
+            cp -r src/lib app/lib
+          fi
+
+          if [ -f src/pubspec.yaml ]; then
+            cp src/pubspec.yaml app/pubspec.yaml
+          fi
+
+          if [ -d src/assets ]; then
+            mkdir -p app/assets
+            rsync -a src/assets/ app/assets/
+          fi
+
+          echo "== head of app/pubspec.yaml =="
+          sed -n '1,100p' app/pubspec.yaml || true
+
+      # 👇 تثبيت الحزم
+      - name: Pub get
+        working-directory: fresh/app
+        run: flutter pub get -v
+
+      # 👇 إعداد التوقيع (اختياري لكن مفعّل هنا)
+      - name: Prepare Android signing
+        working-directory: fresh/app/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD:      ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS:         ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           keytool -genkey -v \
             -keystore keystore.jks \
@@ -46,26 +92,14 @@ jobs:
           keyAlias=${ANDROID_KEY_ALIAS}
           storeFile=keystore.jks
           EOF
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
 
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build APK (release, verbose) and capture log
+      # 👇 البناء (ونحفظ اللوق)
+      - name: Build APK (release, verbose)
+        working-directory: fresh/app
         run: |
           set -o pipefail
           flutter clean
-          flutter build apk --release -v 2>&1 | tee flutter_build.log
-
-      - name: Fail if APK missing
-        run: |
-          test -f build/app/outputs/flutter-apk/app-release.apk || {
-            echo "::error::APK not produced. See flutter_build.log in logs artifact."
-            exit 1
-          }
+          flutter build apk --release -v 2>&1 | tee ../../flutter_build.log
 
       - name: Upload Flutter build log
         uses: actions/upload-artifact@v4
@@ -73,8 +107,10 @@ jobs:
           name: flutter_build.log
           path: flutter_build.log
 
+      # 👇 رفع الـ APK الناتج
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: fresh/app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
