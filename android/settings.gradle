@@ -1,3 +1,5 @@
+// android/settings.gradle
+
 pluginManagement {
     repositories {
         google()
@@ -14,5 +16,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "bbk_ai_app"
+rootProject.name = "bbk_ai_app"   // غيّر الاسم إذا مشروعك مختلف
 include(":app")
