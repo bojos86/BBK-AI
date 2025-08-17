@@ -13,87 +13,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java 17 (Temurin)
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
+      # Flutter 3.35.1 (أحدث ستايبل حالياً على GH Actions)
       - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
-          flutter-version: 3.35.1
-          cache: true
+          flutter-version: '3.35.1'
+          cache: false
 
-      - name: Show Flutter versions
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      # تأكيد إن الملف الجديد هو اللي في الريبو
+      - name: Show main.dart head
         run: |
-          flutter --version
-          dart --version
+          echo "----- lib/main.dart (first lines) -----"
+          head -n 40 lib/main.dart
 
-      # 👇 الحل القاطع لمشكلة unsupported Gradle project
-      - name: Remove old android folder (if any)
-        run: rm -rf android
-
-      - name: Recreate modern android folder from template
+      # تنظيف كامل لأي كاش قديم
+      - name: Clean workspace
         run: |
-          # ينشئ مجلد android حديث (v2 embedding + flutter gradle plugin الجديد)
-          flutter create --platforms=android \
-            --project-name bbk_ai_app \
-            --org com.example \
-            --overwrite .
-
-      # تهيئة التوقيع
-      - name: Prepare Android signing
-        working-directory: android
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD:      ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS:         ${{ secrets.ANDROID_KEY_ALIAS }}   # قيمته عندك: MFO.ALSAYEDOMAR
-        run: |
-          keytool -genkey -v \
-            -keystore keystore.jks \
-            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
-            -keypass "${ANDROID_KEY_PASSWORD}" \
-            -alias "${ANDROID_KEY_ALIAS}" \
-            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
-            -keyalg RSA -keysize 2048 -validity 10000
-
-          cat > key.properties <<'EOF'
-          storePassword=${ANDROID_KEYSTORE_PASSWORD}
-          keyPassword=${ANDROID_KEY_PASSWORD}
-          keyAlias=${ANDROID_KEY_ALIAS}
-          storeFile=keystore.jks
-          EOF
+          flutter clean
+          rm -rf build android/.gradle .dart_tool
 
       - name: Pub get
         run: flutter pub get
 
-      # (اختياري) لو مفعّل بالـ pubspec
-      - name: Generate launcher icons (if configured)
+      - name: Ensure assets exist
         run: |
-          if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            flutter pub run flutter_launcher_icons:main
-          else
-            echo "launcher icons not configured. skipping."
-          fi
-
-      - name: Generate native splash (if configured)
-        run: |
-          if grep -q "flutter_native_splash" pubspec.yaml; then
-            flutter pub run flutter_native_splash:create
-          else
-            echo "native splash not configured. skipping."
-          fi
+          test -f assets/app_banner.png || (echo "assets/app_banner.png NOT FOUND" && exit 1)
 
       - name: Build APK (release, verbose)
+        env:
+          JAVA_TOOL_OPTIONS: "-Xmx3g"
         run: |
-          flutter clean
           flutter build apk --release -v
 
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
