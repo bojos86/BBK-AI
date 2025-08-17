@@ -13,63 +13,67 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.1'
-          cache: false
+          flutter-version: "3.35.1"
+          channel: stable
+          cache: true
 
       - name: Flutter doctor
         run: flutter doctor -v
 
-      - name: Clean workspace
+      - name: Prepare Android signing (keystore + key.properties)
+        working-directory: android
         run: |
-          flutter clean
-          rm -rf build android/.gradle .dart_tool
+          keytool -genkey -v \
+            -keystore keystore.jks \
+            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
+            -keypass "${ANDROID_KEY_PASSWORD}" \
+            -alias "${ANDROID_KEY_ALIAS}" \
+            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
+            -keyalg RSA -keysize 2048 -validity 10000
 
-      - name: Pub get
+          cat > key.properties <<'EOF'
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=keystore.jks
+          EOF
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+
+      - name: Install dependencies
         run: flutter pub get
 
-      # نبني مع التقاط اللوق إلى ملف، ونمنع الخطوة من التوقف مباشرة
-      - name: Build APK (release, capture logs)
-        id: build
-        shell: bash
-        env:
-          JAVA_TOOL_OPTIONS: "-Xmx3g"
+      - name: Build APK (release, verbose) and capture log
         run: |
           set -o pipefail
-          flutter build apk --release -v 2>&1 | tee flutter_build.log || true
-          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
-            echo "apk_ok=true" >> $GITHUB_OUTPUT
-          else
-            echo "apk_ok=false" >> $GITHUB_OUTPUT
-          fi
+          flutter clean
+          flutter build apk --release -v 2>&1 | tee flutter_build.log
 
-      # نعرض آخر 300 سطر من اللوق في الواجهة
-      - name: Show last lines of Flutter build log
-        run: |
-          echo "------ LAST 300 LINES ------"
-          tail -n 300 flutter_build.log || true
-          echo "------ GREP ERRORS ------"
-          grep -nE "ERROR|Error|Exception|FAILURE|A problem occurred|Could not" flutter_build.log || true
-
-      # نفشل الجوب لو ما طلع APK
       - name: Fail if APK missing
-        if: steps.build.outputs.apk_ok == 'false'
         run: |
-          echo "::error::APK not produced. See flutter_build.log in logs artifact."
-          exit 1
+          test -f build/app/outputs/flutter-apk/app-release.apk || {
+            echo "::error::APK not produced. See flutter_build.log in logs artifact."
+            exit 1
+          }
 
-      # نرفع ملف اللوق دايمًا عشان نقدر نشوفه
       - name: Upload Flutter build log
         uses: actions/upload-artifact@v4
         with:
           name: flutter_build.log
           path: flutter_build.log
 
-      # نرفع الـAPK إذا نجح
       - name: Upload APK artifact
-        if: steps.build.outputs.apk_ok == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
