@@ -10,60 +10,61 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1) جلب الكود
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 2) جافا 17
       - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Flutter (stable 3.24.3)
+      # 3) تثبيت Flutter (القناة المستقرة)
+      - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.3"
           channel: stable
+          # لو تبين تحديد رقم بعينه:
+          # flutter-version: '3.24.3'
           cache: true
 
       - name: Flutter versions
-        run: |
-          flutter --version
-          dart --version
+        run: flutter --version
 
-      # توقيع أندرويد (نفس اللي سوّيناه)
+      # 4) تجهيز التوقيع (يستخدم الأسرار من Settings > Secrets)
       - name: Prepare Android signing
         working-directory: android
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          set -e
-          keytool -genkey -v \
-            -keystore keystore.jks \
-            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
-            -keypass "${ANDROID_KEY_PASSWORD}" \
-            -alias "${ANDROID_KEY_ALIAS}" \
-            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
-            -keyalg RSA -keysize 2048 -validity 10000
+          # ينشئ keystore فقط إذا ما كان موجود
+          if [ ! -f keystore.jks ]; then
+            keytool -genkey -v \
+              -keystore keystore.jks \
+              -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
+              -keypass "${ANDROID_KEY_PASSWORD}" \
+              -alias "${ANDROID_KEY_ALIAS}" \
+              -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
+
+          # يكتب ملف key.properties ليستخدمه Gradle/Flutter
           cat > key.properties <<'EOF'
           storePassword=${ANDROID_KEYSTORE_PASSWORD}
           keyPassword=${ANDROID_KEY_PASSWORD}
           keyAlias=${ANDROID_KEY_ALIAS}
           storeFile=keystore.jks
           EOF
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD:    ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS:       ${{ secrets.ANDROID_KEY_ALIAS }}
 
-      # تأكيد الـ gradlew + عرض سطرين من المانيفست لنتأكد أنه صالح
-      - name: Quick sanity checks
-        run: |
-          chmod +x android/gradlew
-          echo "== AndroidManifest head =="
-          sed -n '1,40p' android/app/src/main/AndroidManifest.xml || true
-
+      # 5) حزم Dart
       - name: Pub get
         run: flutter pub get
 
+      # 6) أيقونات التشغيل (اختياري – يعمل فقط إن كانت مضافة في pubspec.yaml)
       - name: Generate launcher icons (if configured)
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
@@ -72,6 +73,7 @@ jobs:
             echo "launcher icons not configured. skipping."
           fi
 
+      # 7) شاشة الإقلاع (اختياري – يعمل فقط إن كانت مضافة)
       - name: Generate native splash (if configured)
         run: |
           if grep -q "flutter_native_splash" pubspec.yaml; then
@@ -80,40 +82,15 @@ jobs:
             echo "native splash not configured. skipping."
           fi
 
-      # نجمع لوق كامل و نرفعه حتى لو فشل
-      - name: Build APK (release, verbose) and capture logs
-        id: flutter_build
+      # 8) بناء الـ APK (ريليس)
+      - name: Build APK (release)
         run: |
-          set -o pipefail
           flutter clean
-          # اجمع كل المخرجات في ملف
-          flutter build apk --release --no-tree-shake-icons -v 2>&1 | tee flutter_build.log
+          flutter build apk --release --no-tree-shake-icons -v
 
-      # لو فشل فلاتر، نجرب Gradle مباشر عشان يطلع السبب الجذري
-      - name: Run Gradle assembleRelease with stacktrace (on failure)
-        if: failure()
-        working-directory: android
-        run: |
-          ./gradlew assembleRelease --stacktrace --info 2>&1 | tee ../gradle_build.log || true
-
-      # ارفع الـ APK إذا وُجد
+      # 9) رفع الناتج كـ Artifact
       - name: Upload APK artifact
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/flutter-apk/app-release-unsigned.apk
-          if-no-files-found: ignore
-
-      # ارفع اللوقات دائماً (مهم جداً)
-      - name: Upload build logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: |
-            flutter_build.log
-            android/gradle_build.log
-          if-no-files-found: warn
+          path: build/app/outputs/flutter-apk/app-release.apk
