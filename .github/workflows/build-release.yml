@@ -13,7 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Flutter 3.35.1 (أحدث ستايبل حالياً على GH Actions)
       - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
@@ -23,13 +22,6 @@ jobs:
       - name: Flutter doctor
         run: flutter doctor -v
 
-      # تأكيد إن الملف الجديد هو اللي في الريبو
-      - name: Show main.dart head
-        run: |
-          echo "----- lib/main.dart (first lines) -----"
-          head -n 40 lib/main.dart
-
-      # تنظيف كامل لأي كاش قديم
       - name: Clean workspace
         run: |
           flutter clean
@@ -38,18 +30,46 @@ jobs:
       - name: Pub get
         run: flutter pub get
 
-      - name: Ensure assets exist
-        run: |
-          test -f assets/app_banner.png || (echo "assets/app_banner.png NOT FOUND" && exit 1)
-
-      - name: Build APK (release, verbose)
+      # نبني مع التقاط اللوق إلى ملف، ونمنع الخطوة من التوقف مباشرة
+      - name: Build APK (release, capture logs)
+        id: build
+        shell: bash
         env:
           JAVA_TOOL_OPTIONS: "-Xmx3g"
         run: |
-          flutter build apk --release -v
+          set -o pipefail
+          flutter build apk --release -v 2>&1 | tee flutter_build.log || true
+          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            echo "apk_ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "apk_ok=false" >> $GITHUB_OUTPUT
+          fi
 
+      # نعرض آخر 300 سطر من اللوق في الواجهة
+      - name: Show last lines of Flutter build log
+        run: |
+          echo "------ LAST 300 LINES ------"
+          tail -n 300 flutter_build.log || true
+          echo "------ GREP ERRORS ------"
+          grep -nE "ERROR|Error|Exception|FAILURE|A problem occurred|Could not" flutter_build.log || true
+
+      # نفشل الجوب لو ما طلع APK
+      - name: Fail if APK missing
+        if: steps.build.outputs.apk_ok == 'false'
+        run: |
+          echo "::error::APK not produced. See flutter_build.log in logs artifact."
+          exit 1
+
+      # نرفع ملف اللوق دايمًا عشان نقدر نشوفه
+      - name: Upload Flutter build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter_build.log
+          path: flutter_build.log
+
+      # نرفع الـAPK إذا نجح
       - name: Upload APK artifact
-        if: success()
+        if: steps.build.outputs.apk_ok == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
