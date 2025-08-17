@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 void main() {
+  // للتأكد إن هذا الكود هو اللي يشتغل في البيلد
+  print("🚀 Running BBK AI custom build!");
   runApp(const BBKAIApp());
 }
 
@@ -31,46 +33,30 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ===== AppBar (الهيدر مع البانر) =====
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        toolbarHeight: 100, // ارتفاع البانر
+        toolbarHeight: 100,
         flexibleSpace: Image.asset(
-          'assets/app_banner.png', // هنا البانر اللي عطيتني صورته
+          'assets/app_banner.png',
           fit: BoxFit.cover,
         ),
       ),
-
-      body: SafeArea(
+      body: const SafeArea(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 'تم التحديث بنجاح ✨',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text('جرّبي الزر'),
-              ),
+              SizedBox(height: 16),
             ],
           ),
         ),
       ),
-
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: null,
         child: const Icon(Icons.add),
       ),
     );
