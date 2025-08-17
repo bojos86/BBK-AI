@@ -1,14 +1,14 @@
 name: bbk_ai_app
-description: BBK AI App
+description: BBK AI app
 publish_to: "none"
 
 environment:
-  sdk: ">=3.4.0 <4.0.0"
+  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
+  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
@@ -17,5 +17,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/app_banner.png
+
+# (اختياري) لو حبيتي لاحقًا تشغلين السبلش تلقائي من الباكدج
+# flutter_native_splash:
+#   color: "#F8F2FF"
+#   android_12:
+#     background_color: "#F8F2FF"
+#   branding_mode: bottom
