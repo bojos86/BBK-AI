@@ -22,73 +22,91 @@ jobs:
       - name: Setup Flutter (stable 3.24.3)
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
-          flutter-version: "3.24.3"
+          flutter-version: '3.24.3'
+          channel: 'stable'
           cache: true
 
-      - name: Flutter doctor
-        run: flutter doctor -v
-
-      # مهم: نعيد توليد منصة Android بملفات حديثة (يحل مشكلة v1 embedding والـ Gradle القديم)
-      - name: Regenerate Android folder (safe overwrite)
+      - name: Flutter versions
         run: |
-          flutter create . \
-            --platforms=android \
-            --org com.example \
-            --project-name bbk_ai_app \
-            --overwrite
+          flutter --version
+          dart --version
 
-      - name: Show flutter & dart versions
-        run: flutter --version
+      # (اختياري) عط صلاحية تنفيذ للـ gradlew إذا موجود
+      - name: Ensure gradlew executable (ignore if missing)
+        run: chmod +x android/gradlew || true
 
-      # توقيع أندرويد من الأسرار
+      # إنشاء keystore وربط التوقيع (باستخدام السيكرتس اللي حطّيناها)
       - name: Prepare Android signing
         working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD:     ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS:        ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
+          set -e
           keytool -genkey -v \
             -keystore keystore.jks \
             -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
-            -keypass "${ANDROID_KEY_PASSWORD}" \
-            -alias "${ANDROID_KEY_ALIAS}" \
+            -keypass   "${ANDROID_KEY_PASSWORD}" \
+            -alias     "${ANDROID_KEY_ALIAS}" \
             -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
             -keyalg RSA -keysize 2048 -validity 10000
 
-          cat > key.properties <<'EOF'
+          cat > key.properties <<EOF
           storePassword=${ANDROID_KEYSTORE_PASSWORD}
           keyPassword=${ANDROID_KEY_PASSWORD}
           keyAlias=${ANDROID_KEY_ALIAS}
           storeFile=keystore.jks
           EOF
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
 
       - name: Pub get
-        run: flutter pub get -v
+        run: flutter pub get
 
-      - name: Generate launcher icons (if configured)
+      # نبني و”نصبّ” كل اللوقز داخل ملفات ونرفعها كـ Artifacts
+      - name: Build APK (release, verbose) and capture logs
+        env:
+          # تخلي بايب يرجّع كود خروج الكوماند الأول حتى مع tee
+          SHELLOPTS: pipefail
         run: |
-          if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            flutter pub run flutter_launcher_icons:main
-          else
-            echo "launcher icons not configured. skipping."
-          fi
-
-      - name: Generate native splash (if configured)
-        run: |
-          if grep -q "flutter_native_splash" pubspec.yaml; then
-            flutter pub run flutter_native_splash:create
-          else
-            echo "native splash not configured. skipping."
-          fi
-
-      - name: Build APK (release, verbose)
-        run: |
+          set -o pipefail
+          mkdir -p logs
+          flutter doctor -v        2>&1 | tee logs/flutter_doctor.log
           flutter clean
-          flutter build apk --release --no-tree-shake-icons -v
+          # لو تبي أي تولز تولّد أيقونات/سبلاش، تقدر ترجعها قبل البناء
+          flutter build apk --release --no-tree-shake-icons -v 2>&1 | tee logs/build_log.txt
+          # نطبع آخر 200 سطر لتسهيل القراءة السريعة في صفحة الأكشنز
+          echo "===== TAIL(build_log.txt) ====="
+          tail -n 200 logs/build_log.txt
 
+      # لو فشل البناء نقتطع مقطع الخطأ السريع (اختياري يفيد التشخيص)
+      - name: Quick failure snippet
+        if: failure()
+        run: |
+          echo "===== FAILURE SNIPPET ====="
+          awk '/FAILURE: Build failed with an exception./,0' logs/build_log.txt | head -n 120 || true
+          echo "===== END SNIPPET ====="
+
+      # نجمع لوقات Gradle أيضاً (لو موجودة)
+      - name: Collect Gradle logs
+        if: always()
+        run: |
+          mkdir -p logs/gradle
+          # دايماً لوقات غرادل تكون تحت مجلد الهوم
+          find "$HOME/.gradle" -name "*.log" -print -exec cp {} logs/gradle/ \; || true
+          # وأي لوق بداخل android/.gradle
+          find android -path "*/.gradle/*" -name "*.log" -print -exec cp {} logs/gradle/ \; || true
+
+      # ارفع اللوقز كـ Artifact سواء نجح أو فشل
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: logs
+
+      # ارفع الـ APK لو انبنى
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
