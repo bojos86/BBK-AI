@@ -26,17 +26,30 @@ jobs:
           flutter-version: 3.35.1
           cache: true
 
-      - name: Flutter versions
-        run: flutter --version
-
-      # 👇 أهم خطوة: إعادة توليد قالب android الحديث داخل المستودع
-      - name: Regenerate modern Android folder
+      - name: Show Flutter versions
         run: |
-          flutter create --platforms=android --project-name bbk_ai_app --org com.example --overwrite .
+          flutter --version
+          dart --version
 
-      # تهيئة التوقيع: يَولد keystore ويكتب key.properties
+      # 👇 الحل القاطع لمشكلة unsupported Gradle project
+      - name: Remove old android folder (if any)
+        run: rm -rf android
+
+      - name: Recreate modern android folder from template
+        run: |
+          # ينشئ مجلد android حديث (v2 embedding + flutter gradle plugin الجديد)
+          flutter create --platforms=android \
+            --project-name bbk_ai_app \
+            --org com.example \
+            --overwrite .
+
+      # تهيئة التوقيع
       - name: Prepare Android signing
         working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD:      ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS:         ${{ secrets.ANDROID_KEY_ALIAS }}   # قيمته عندك: MFO.ALSAYEDOMAR
         run: |
           keytool -genkey -v \
             -keystore keystore.jks \
@@ -45,19 +58,33 @@ jobs:
             -alias "${ANDROID_KEY_ALIAS}" \
             -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
             -keyalg RSA -keysize 2048 -validity 10000
+
           cat > key.properties <<'EOF'
           storePassword=${ANDROID_KEYSTORE_PASSWORD}
           keyPassword=${ANDROID_KEY_PASSWORD}
           keyAlias=${ANDROID_KEY_ALIAS}
           storeFile=keystore.jks
           EOF
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD:      ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS:         ${{ secrets.ANDROID_KEY_ALIAS }}
 
       - name: Pub get
         run: flutter pub get
+
+      # (اختياري) لو مفعّل بالـ pubspec
+      - name: Generate launcher icons (if configured)
+        run: |
+          if grep -q "flutter_launcher_icons" pubspec.yaml; then
+            flutter pub run flutter_launcher_icons:main
+          else
+            echo "launcher icons not configured. skipping."
+          fi
+
+      - name: Generate native splash (if configured)
+        run: |
+          if grep -q "flutter_native_splash" pubspec.yaml; then
+            flutter pub run flutter_native_splash:create
+          else
+            echo "native splash not configured. skipping."
+          fi
 
       - name: Build APK (release, verbose)
         run: |
@@ -65,11 +92,8 @@ jobs:
           flutter build apk --release -v
 
       - name: Upload APK artifact
-        if: always()  # ارفع أي ملف لو موجود حتى لو فشل البناء
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            android/gradle_build.log
-          if-no-files-found: ignore
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
