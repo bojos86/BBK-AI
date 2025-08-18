@@ -1,54 +1,44 @@
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
+    id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
-    namespace "com.example.bbk_ai_app"   // عدّلها إذا بكيجك مختلف
-    compileSdk 35
+    namespace "com.example.bbk_ai_app"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
 
     defaultConfig {
-        applicationId "com.example.bbk_ai_app"  // عدّلها إذا بكيجك مختلف
-        minSdk 23
-        targetSdk 35
+        applicationId "com.example.bbk_ai_app"
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
         versionCode 1
         versionName "1.0"
-
-        // لإتاحة MultiDex لو كبرت الديبندنسيز
         multiDexEnabled true
     }
 
     buildTypes {
         release {
+            // توقيع مؤقت لتسهيل البناء على CI (بدّله لاحقًا بمفتاحك)
+            signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // لو عندك توقيع ريلز، فعّل signingConfig هنا
-            // signingConfig signingConfigs.release
         }
         debug {
-            minifyEnabled false
+            signingConfig signingConfigs.debug
         }
     }
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
     kotlinOptions {
         jvmTarget = "17"
     }
+}
 
-    packagingOptions {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
+flutter {
+    source '../..'
 }
 
 dependencies {
-    implementation "androidx.core:core-ktx:1.13.1"
-    implementation "androidx.appcompat:appcompat:1.7.0"
-    implementation "com.google.android.material:material:1.12.0"
-    implementation "androidx.multidex:multidex:2.0.1"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
