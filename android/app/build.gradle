@@ -4,47 +4,35 @@ plugins {
 }
 
 android {
-    namespace "com.example.bbk_ai_app"   // عدّل إذا باكدجك مختلف
-    compileSdk 35
+    namespace "com.bbkai.app"
+    compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.bbk_ai_app" // عدّل إذا لزم
+        applicationId "com.bbkai.app"
         minSdk 23
-        targetSdk 35
+        targetSdk 34
         versionCode 1
-        versionName "1.0"
-
+        versionName "1.0.0"
         multiDexEnabled true
     }
 
     buildTypes {
         release {
-            // لو عندك توقيع حقيقية، فعّلها هنا
             minifyEnabled false
             shrinkResources false
-            signingConfig signingConfigs.debug
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
-        debug {
-            // نفس الشي
-        }
+        debug { debuggable true }
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    packagingOptions {
-        resources {
-            excludes += [ "META-INF/*" ]
-        }
-    }
+    kotlinOptions { jvmTarget = "17" }
+    packaging { resources.excludes += [ "META-INF/LICENSE*", "META-INF/AL2.0", "META-INF/LGPL2.1" ] }
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.0.21"
-    // لو تستخدم ML Kit/CameraX الخ.. ضيفها هنا
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
 }
