@@ -1,19 +1,23 @@
-name: Build Android (Release)
+name: Build Flutter APK (Release)
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx2g"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx2g -Dfile.encoding=UTF-8' -Dorg.gradle.daemon=false"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 17 (Temurin)
+      - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -22,57 +26,48 @@ jobs:
       - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
+          channel: "stable"
           flutter-version: "3.35.1"
           cache: true
 
-      - name: Show Flutter versions
-        run: |
-          flutter --version
-          flutter doctor -v
+      - name: Flutter doctor (quick)
+        run: flutter doctor -v || true
 
-      - name: Accept Android SDK licenses (best effort)
-        run: |
-          yes "y" | sudo ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
-      - name: Cache pub packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Install dependencies
+      - name: Pub get (with clean)
         run: |
           flutter clean
           flutter pub get
-          echo "Assets directory:"
-          ls -la assets || true
 
-      # لو تستخدم flutter_native_splash / flutter_launcher_icons اشغّلهم هنا (اختياري)
-      # - name: Generate splash
-      #   run: dart run flutter_native_splash:create
-      # - name: Generate launcher icons
-      #   run: dart run flutter_launcher_icons
+      # لو تستخدم flutter_native_splash أو flutter_launcher_icons بتتفعل هنا تلقائياً
+      - name: Generate native splash (if configured)
+        run: |
+          grep -q "flutter_native_splash" pubspec.yaml && \
+          dart run flutter_native_splash:create || echo "no splash"
+      - name: Generate launcher icons (if configured)
+        run: |
+          grep -q "flutter_launcher_icons" pubspec.yaml && \
+          dart run flutter_launcher_icons:main || echo "no icons"
 
-      - name: Build APK (release, verbose) and capture full log
+      - name: Build APK (release, verbose) and capture logs
         run: |
           set -o pipefail
-          mkdir -p logs
-          flutter build apk --release --verbose 2>&1 | tee logs/flutter_build.log
+          flutter build apk --release -v 2>&1 | tee flutter_build.log
+          echo "---- GRADLE FALLBACK (direct) ----"
+          (cd android && ./gradlew assembleRelease --stacktrace --info 2>&1 | tee ../gradle_build.log) || true
 
       - name: Show last lines of Flutter build log
         if: always()
         run: |
-          echo "======== TAIL (last 400 lines) ========"
-          tail -n 400 logs/flutter_build.log || true
-          echo "======== GREP ERRORS ========"
-          (grep -nEi "(^e/| exception| error: | failure| fail| missing| not found)" logs/flutter_build.log || true) | head -n 200
+          echo "==== TAIL flutter_build.log ===="
+          tail -n 300 flutter_build.log || true
+          echo "==== TAIL gradle_build.log ===="
+          tail -n 300 gradle_build.log || true
 
       - name: Fail if APK missing
+        if: always()
         run: |
           if [ ! -f build/app/outputs/flutter-apk/app-release.apk ]; then
-            echo "::error::APK not produced. See flutter_build.log in logs artifact."
+            echo "::error::APK not produced. See flutter_build.log and gradle_build.log in logs artifact."
             exit 1
           fi
 
@@ -80,11 +75,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: flutter_build_log
-          path: logs/flutter_build.log
+          name: logs
+          path: |
+            flutter_build.log
+            gradle_build.log
 
       - name: Upload APK artifact
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
