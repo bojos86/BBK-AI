@@ -1,11 +1,9 @@
 <resources>
-    <!-- شاشة الإقلاع (قبل ما يشتغل Flutter) -->
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
     </style>
 
-    <!-- الثيم العادي للنشاط -->
-    <style name="NormalTheme" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@color/white</item>
     </style>
 </resources>
