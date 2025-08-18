@@ -1,6 +1,7 @@
 name: bbk_ai_app
-description: BBK AI app
+description: BBK AI Mobile App
 publish_to: "none"
+version: 1.0.0+1
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -10,17 +11,43 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
+  # OCR
+  image_picker: ^1.1.2
+  google_mlkit_text_recognition: ^0.13.0
+
+  # UI مساعدة
+  intl: ^0.19.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.6
 
 flutter:
   uses-material-design: true
 
-# (اختياري) لو حبيتي لاحقًا تشغلين السبلش تلقائي من الباكدج
-# flutter_native_splash:
-#   color: "#F8F2FF"
-#   android_12:
-#     background_color: "#F8F2FF"
-#   branding_mode: bottom
+  assets:
+    - assets/banner.png         # بانر الهيدر
+    - assets/icon/icon.png      # أيقونة المصدر (تُستخدم لتوليد الأيقونات)
+    - assets/splash.png         # صورة السبلاش (اختيارية – أو خلي لون)
+
+# إعداد أيقونة الاب
+flutter_icons:
+  android: true
+  ios: false
+  image_path: assets/icon/icon.png
+  min_sdk_android: 23
+  adaptive_icon_background: "#123D7A"
+  adaptive_icon_foreground: assets/icon/icon.png
+
+# إعداد سبلاش سكرين
+flutter_native_splash:
+  android: true
+  ios: false
+  color: "#123D7A"
+  image: assets/splash.png
+  android_12:
+    color: "#123D7A"
+    image: assets/splash.png
