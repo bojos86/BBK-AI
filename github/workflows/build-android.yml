@@ -1,0 +1,81 @@
+name: Build Android (Release)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter (stable 3.35.1)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.1"
+          cache: true
+
+      - name: Versions
+        run: |
+          flutter --version
+          flutter doctor -v
+
+      - name: Accept Android SDK licenses (best effort)
+        run: yes "y" | sudo ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: |
+          flutter clean
+          flutter pub get
+          ls -la assets || true
+
+      - name: Build APK (release, verbose) and capture log
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          flutter build apk --release --verbose 2>&1 | tee logs/flutter_build.log
+
+      - name: Tail build log
+        if: always()
+        run: |
+          echo "===== last 300 lines ====="
+          tail -n 300 logs/flutter_build.log || true
+          echo "===== grep errors (top) ====="
+          (grep -nEi "(^e/| exception| error: | failure| fail| missing| not found)" logs/flutter_build.log || true) | head -n 200
+
+      - name: Fail if APK missing
+        run: |
+          if [ ! -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            echo "::error::APK not produced. See flutter_build.log artifact."
+            exit 1
+          fi
+
+      - name: Upload Flutter build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter_build_log
+          path: logs/flutter_build.log
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
