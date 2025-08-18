@@ -19,7 +19,7 @@ dependencies:
   google_mlkit_text_recognition: ^0.10.0
 
   # الكاميرا — إصدار متوافق مع Flutter الحالي
-  camera: ^0.10.5+9
+  camera: ^0.11.2
 
 dev_dependencies:
   flutter_test:
