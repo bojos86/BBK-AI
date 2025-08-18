@@ -1,53 +1,48 @@
 name: bbk_ai_app
-description: BBK AI Mobile App
+description: BBK AI Mobile Banking (Flutter)
 publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-
-  # OCR
-  image_picker: ^1.1.2
-  google_mlkit_text_recognition: ^0.13.0
-
-  # UI مساعدة
+  google_mlkit_text_recognition: ^0.13.0   # OCR (placeholder بالصفحة)
+  http: ^1.2.2                              # Payment placeholders
   intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
   flutter_native_splash: ^2.4.6
 
 flutter:
   uses-material-design: true
-
   assets:
-    - assets/banner.png         # بانر الهيدر
-    - assets/icon/icon.png      # أيقونة المصدر (تُستخدم لتوليد الأيقونات)
-    - assets/splash.png         # صورة السبلاش (اختيارية – أو خلي لون)
+    - assets/app_banner.png
+    - assets/app_icon.png
+    - assets/splash_logo.png
 
-# إعداد أيقونة الاب
+# أيقونة التطبيق
 flutter_icons:
   android: true
   ios: false
-  image_path: assets/icon/icon.png
+  image_path: assets/app_icon.png
   min_sdk_android: 23
   adaptive_icon_background: "#123D7A"
-  adaptive_icon_foreground: assets/icon/icon.png
+  adaptive_icon_foreground: assets/app_icon.png
 
-# إعداد سبلاش سكرين
+# شاشة الإقلاع (Splash)
 flutter_native_splash:
   android: true
   ios: false
   color: "#123D7A"
-  image: assets/splash.png
+  image: assets/splash_logo.png
   android_12:
     color: "#123D7A"
-    image: assets/splash.png
+    image: assets/splash_logo.png
