@@ -23,42 +23,28 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.35.1'
           cache: true
 
-      - name: Flutter versions
-        run: |
-          flutter --version
-          dart --version
+      - name: Flutter doctor
+        run: flutter doctor -v
 
-      # إعداد توقيع مؤقت (ينفع للتجربة/CI فقط)
-      - name: Prepare Android signing
-        working-directory: android
-        run: |
-          keytool -genkey -v \
-            -keystore keystore.jks \
-            -storepass android123 \
-            -keypass android123 \
-            -alias upload \
-            -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
-            -keyalg RSA -keysize 2048 -validity 10000
-
-          cat > key.properties <<'EOF'
-          storePassword=android123
-          keyPassword=android123
-          keyAlias=upload
-          storeFile=keystore.jks
-          EOF
-
-      - name: Install dependencies
+      - name: Pub get
         run: flutter pub get
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
+
+      - name: Generate native splash
+        run: dart run flutter_native_splash:create
 
       - name: Build APK (release, verbose)
         run: |
           flutter clean
-          flutter build apk --release --no-tree-shake-icons -v
+          flutter build apk --release -v
 
       - name: Upload APK artifact
-        if: ${{ success() }}
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
