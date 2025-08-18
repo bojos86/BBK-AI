@@ -4,15 +4,16 @@ plugins {
 }
 
 android {
-    namespace "com.bbkai.app"
+    namespace "com.example.bbk_ai_app"
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.bbkai.app"
+        applicationId "com.example.bbk_ai_app"
         minSdk 23
         targetSdk 34
         versionCode 1
         versionName "1.0.0"
+
         multiDexEnabled true
     }
 
@@ -22,15 +23,27 @@ android {
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
-        debug { debuggable true }
+        debug {
+            minifyEnabled false
+        }
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
-    packaging { resources.excludes += [ "META-INF/LICENSE*", "META-INF/AL2.0", "META-INF/LGPL2.1" ] }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    packagingOptions {
+        resources.excludes += [
+                'META-INF/LICENSE',
+                'META-INF/LICENSE.txt',
+                'META-INF/NOTICE',
+                'META-INF/NOTICE.txt'
+        ]
+    }
 }
 
 dependencies {
