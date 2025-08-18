@@ -38,20 +38,59 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Build APK (release) and capture logs
+      # لو مفعّل flutter_native_splash / flutter_launcher_icons بيشتغلوا تلقائياً
+      - name: Generate native splash (if configured)
+        run: |
+          grep -q "flutter_native_splash" pubspec.yaml && \
+          dart run flutter_native_splash:create || echo "no splash"
+      - name: Generate launcher icons (if configured)
+        run: |
+          grep -q "flutter_launcher_icons" pubspec.yaml && \
+          dart run flutter_launcher_icons:main || echo "no icons"
+
+      - name: Build APK with Flutter (verbose)
+        id: flutter_build
         run: |
           set -o pipefail
-          flutter build apk --release -v 2>&1 | tee flutter_build.log || true
-          echo "---- Gradle direct (fallback) ----"
-          (cd android && ./gradlew assembleRelease --stacktrace --info 2>&1 | tee ../gradle_build.log) || true
+          echo ">>> flutter build apk --release"
+          (flutter build apk --release -v 2>&1 | tee flutter_build.log)
 
-      - name: Show tail logs
+      - name: Fallback build with Gradle if Flutter APK missing
+        id: gradle_build
+        if: ${{ !exists('build/app/outputs/flutter-apk/app-release.apk') }}
+        run: |
+          echo "Flutter APK not found. Trying Gradle assembleRelease…"
+          cd android
+          ./gradlew assembleRelease --stacktrace --info 2>&1 | tee ../gradle_build.log
+          cd ..
+          # أطبع أماكن الملفات علشان نعرف المسار النهائي
+          echo "==== list outputs ===="
+          (ls -la build/app/outputs/flutter-apk || true)
+          (ls -la android/app/build/outputs/apk/release || true)
+
+      - name: Show last lines of logs
         if: always()
         run: |
-          echo "==== flutter_build.log (tail) ===="
+          echo "==== tail flutter_build.log ===="
           tail -n 200 flutter_build.log || true
-          echo "==== gradle_build.log (tail) ===="
+          echo "==== tail gradle_build.log ===="
           tail -n 200 gradle_build.log || true
+
+      - name: Locate APK path
+        id: locate
+        run: |
+          set -e
+          APK_PATH=""
+          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          elif [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+          fi
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "APK_PATH=${APK_PATH}"
+          if [ -z "$APK_PATH" ]; then
+            echo "::warning::No APK found in common output paths."
+          fi
 
       - name: Upload logs
         if: always()
@@ -63,8 +102,8 @@ jobs:
             gradle_build.log
 
       - name: Upload APK
-        if: always()
+        if: ${{ steps.locate.outputs.apk_path != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: ${{ steps.locate.outputs.apk_path }}
