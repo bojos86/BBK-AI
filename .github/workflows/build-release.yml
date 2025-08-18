@@ -9,36 +9,51 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+    env:
+      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx2g"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8 -Dorg.gradle.daemon=false"
 
-      - name: Setup Java 17
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
+          cache: 'gradle'
 
-      - name: Setup Flutter
+      - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.1"
           channel: stable
           cache: true
 
-      - name: Flutter doctor
+      - name: Flutter doctor (quick)
         run: flutter doctor -v || true
 
-      - name: Get packages
+      - name: Accept Android licenses
+        run: |
+          yes | flutter doctor --android-licenses || true
+
+      - name: Get packages (clean + pub get)
         run: |
           flutter clean
           flutter pub get
 
-      - name: Generate splash and icons
+      # (اختياري) إذا مُعرّف flutter_native_splash / flutter_launcher_icons في pubspec.yaml
+      - name: Generate native splash (if configured)
         run: |
-          (grep -q flutter_native_splash pubspec.yaml && dart run flutter_native_splash:create) || true
-          (grep -q flutter_launcher_icons pubspec.yaml && dart run flutter_launcher_icons:main) || true
+          grep -q "flutter_native_splash" pubspec.yaml && \
+          dart run flutter_native_splash:create || echo "no splash"
 
-      - name: Build APK (release) and capture logs
+      - name: Generate launcher icons (if configured)
+        run: |
+          grep -q "flutter_launcher_icons" pubspec.yaml && \
+          dart run flutter_launcher_icons:main || echo "no icons"
+
+      - name: Build APK (release, verbose) and capture logs
         run: |
           set -o pipefail
           flutter build apk --release -v 2>&1 | tee flutter_build.log
@@ -46,6 +61,7 @@ jobs:
       - name: Show tail logs
         if: always()
         run: |
+          echo "======== tail flutter_build.log ========"
           tail -n 300 flutter_build.log || true
 
       - name: Upload logs
@@ -53,7 +69,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: logs
-          path: flutter_build.log
+          path: |
+            flutter_build.log
 
       - name: Upload APK
         if: always()
