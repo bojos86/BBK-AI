@@ -1,4 +1,4 @@
-name: Build APK from Fresh Template
+name: Build Flutter APK (Release)
 
 on:
   push:
@@ -13,104 +13,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Flutter (stable 3.35.1)
+      - name: Setup Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.1'
-          cache: false
+          channel: stable
+          cache: true
 
-      - name: Show Flutter versions
+      - name: Flutter versions
         run: |
           flutter --version
           dart --version
-          ls -la
 
-      # 👇 نحضّر كودك فقط (lib + pubspec + assets) في مجلد src/
-      - name: Stage your Dart code only
-        run: |
-          mkdir -p fresh/src
-          [ -d lib ] && cp -r lib fresh/src/ || true
-          [ -f pubspec.yaml ] && cp pubspec.yaml fresh/src/ || true
-          [ -d assets ] && cp -r assets fresh/src/ || true
-          echo "== staged =="
-          find fresh/src -maxdepth 2 -type f -print || true
-
-      # 👇 ننشئ مشروع Flutter جديد داخل fresh/app (Android فقط)
-      - name: Create fresh Flutter app (android)
-        run: |
-          cd fresh
-          flutter create --platforms=android --project-name bbk_ai_app --org com.example app
-          ls -la app
-
-      # 👇 نركّب كودك على القالب الجديد
-      - name: Overlay your code onto fresh/app
-        run: |
-          set -e
-          cd fresh
-
-          if [ -d src/lib ]; then
-            rm -rf app/lib
-            cp -r src/lib app/lib
-          fi
-
-          if [ -f src/pubspec.yaml ]; then
-            cp src/pubspec.yaml app/pubspec.yaml
-          fi
-
-          if [ -d src/assets ]; then
-            mkdir -p app/assets
-            rsync -a src/assets/ app/assets/
-          fi
-
-          echo "== head of app/pubspec.yaml =="
-          sed -n '1,100p' app/pubspec.yaml || true
-
-      # 👇 تثبيت الحزم
-      - name: Pub get
-        working-directory: fresh/app
-        run: flutter pub get -v
-
-      # 👇 إعداد التوقيع (اختياري لكن مفعّل هنا)
+      # إعداد توقيع مؤقت (ينفع للتجربة/CI فقط)
       - name: Prepare Android signing
-        working-directory: fresh/app/android
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD:      ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS:         ${{ secrets.ANDROID_KEY_ALIAS }}
+        working-directory: android
         run: |
           keytool -genkey -v \
             -keystore keystore.jks \
-            -storepass "${ANDROID_KEYSTORE_PASSWORD}" \
-            -keypass "${ANDROID_KEY_PASSWORD}" \
-            -alias "${ANDROID_KEY_ALIAS}" \
+            -storepass android123 \
+            -keypass android123 \
+            -alias upload \
             -dname "CN=BBK AI, OU=Engineering, O=BBK, L=Kuwait, S=KW, C=KW" \
             -keyalg RSA -keysize 2048 -validity 10000
 
           cat > key.properties <<'EOF'
-          storePassword=${ANDROID_KEYSTORE_PASSWORD}
-          keyPassword=${ANDROID_KEY_PASSWORD}
-          keyAlias=${ANDROID_KEY_ALIAS}
+          storePassword=android123
+          keyPassword=android123
+          keyAlias=upload
           storeFile=keystore.jks
           EOF
 
-      # 👇 البناء (ونحفظ اللوق)
+      - name: Install dependencies
+        run: flutter pub get
+
       - name: Build APK (release, verbose)
-        working-directory: fresh/app
         run: |
-          set -o pipefail
           flutter clean
-          flutter build apk --release -v 2>&1 | tee ../../flutter_build.log
+          flutter build apk --release --no-tree-shake-icons -v
 
-      - name: Upload Flutter build log
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter_build.log
-          path: flutter_build.log
-
-      # 👇 رفع الـ APK الناتج
       - name: Upload APK artifact
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: fresh/app/build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
+          path: build/app/outputs/flutter-apk/app-release.apk
