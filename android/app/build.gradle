@@ -1,46 +1,44 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    id "org.jetbrains.kotlin.android"
+    id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
     namespace "com.example.bbk_ai_app"
-    compileSdkVersion 34
+    compileSdk flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
     defaultConfig {
         applicationId "com.example.bbk_ai_app"
-        minSdkVersion 23
-        targetSdkVersion 34
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
         versionCode 1
-        versionName "1.0.0"
+        versionName "1.0"
         multiDexEnabled true
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug   // جرّب بدون توقيع مخصص أولاً
+            // توقيع مؤقت لتسهيل البناء على CI (بدّله لاحقًا بمفتاحك)
+            signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
         }
         debug {
-            minifyEnabled false
+            signingConfig signingConfigs.debug
         }
     }
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
     kotlinOptions {
-        jvmTarget = '17'
-    }
-
-    packagingOptions {
-        resources.excludes += [ "META-INF/*" ]
+        jvmTarget = "17"
     }
 }
 
+flutter {
+    source '../..'
+}
+
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
