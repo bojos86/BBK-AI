@@ -1,5 +1,4 @@
-package com.example.bbk_ai_app
-
+package com.bbkai.app
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity: FlutterActivity()
