@@ -1,53 +1,46 @@
 plugins {
     id "com.android.application"
-    id "org.jetbrains.kotlin.android"
+    id "kotlin-android"
 }
 
 android {
     namespace "com.example.bbk_ai_app"
-    compileSdk 35
+    compileSdkVersion 34
+    ndkVersion flutter.ndkVersion
 
     defaultConfig {
         applicationId "com.example.bbk_ai_app"
-        minSdk 21
-        targetSdk 35
+        minSdkVersion 23
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0.0"
         multiDexEnabled true
     }
 
-    signingConfigs {
-        release {
-            def props = new Properties()
-            def f = rootProject.file("key.properties")
-            if (f.exists()) {
-                props.load(new FileInputStream(f))
-                storeFile file(props["storeFile"])
-                storePassword props["storePassword"]
-                keyAlias props["keyAlias"]
-                keyPassword props["keyPassword"]
-            }
-        }
-    }
-
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug   // جرّب بدون توقيع مخصص أولاً
+            minifyEnabled false
+            shrinkResources false
+        }
+        debug {
             minifyEnabled false
         }
-        debug { }
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    packagingOptions {
+        resources.excludes += [ "META-INF/*" ]
+    }
 }
 
 dependencies {
-    implementation "androidx.core:core-ktx:1.13.1"
-    implementation "androidx.appcompat:appcompat:1.7.0"
-    implementation "com.google.android.material:material:1.12.0"
-    implementation "androidx.multidex:multidex:2.0.1"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 }
