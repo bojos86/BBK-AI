@@ -1,44 +1,50 @@
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
-    id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
-    namespace "com.example.bbk_ai_app"
-    compileSdk flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+    namespace "com.example.bbk_ai_app"   // عدّل إذا باكدجك مختلف
+    compileSdk 35
 
     defaultConfig {
-        applicationId "com.example.bbk_ai_app"
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion flutter.targetSdkVersion
+        applicationId "com.example.bbk_ai_app" // عدّل إذا لزم
+        minSdk 23
+        targetSdk 35
         versionCode 1
         versionName "1.0"
+
         multiDexEnabled true
     }
 
     buildTypes {
         release {
-            // توقيع مؤقت لتسهيل البناء على CI (بدّله لاحقًا بمفتاحك)
-            signingConfig signingConfigs.debug
+            // لو عندك توقيع حقيقية، فعّلها هنا
             minifyEnabled false
             shrinkResources false
+            signingConfig signingConfigs.debug
         }
         debug {
-            signingConfig signingConfigs.debug
+            // نفس الشي
         }
     }
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
     kotlinOptions {
         jvmTarget = "17"
     }
-}
 
-flutter {
-    source '../..'
+    packagingOptions {
+        resources {
+            excludes += [ "META-INF/*" ]
+        }
+    }
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.0.21"
+    // لو تستخدم ML Kit/CameraX الخ.. ضيفها هنا
 }
