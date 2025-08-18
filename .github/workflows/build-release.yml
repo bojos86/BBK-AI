@@ -22,62 +22,57 @@ jobs:
       - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: "stable"
           flutter-version: "3.35.1"
           cache: true
 
       - name: Flutter doctor (quick)
         run: flutter doctor -v || true
 
-      - name: Pub get (clean + get)
+      - name: Get packages (clean + get)
         run: |
           flutter clean
           flutter pub get
 
-      # نحاول أولاً ببناء Flutter ونحفظ اللوج حتى لو فشلت الخطوة
+      - name: Generate splash (if configured)
+        run: |
+          grep -q "flutter_native_splash" pubspec.yaml && \
+          dart run flutter_native_splash:create || echo "no splash"
+
+      - name: Generate launcher icons (if configured)
+        run: |
+          grep -q "flutter_launcher_icons" pubspec.yaml && \
+          dart run flutter_launcher_icons:main || echo "no icons"
+
       - name: Build APK (Flutter)
         run: |
           set -o pipefail
-          flutter build apk --release -v 2>&1 | tee flutter_build.log || true
-
-      # تشغيل Gradle كـ fallback دائماً ونحفظ اللوج
-      - name: Build APK (Gradle fallback)
-        run: |
-          cd android
-          ./gradlew assembleRelease --no-daemon --stacktrace --info 2>&1 | tee ../gradle_build.log || true
+          flutter build apk --release -v 2>&1 | tee flutter_build.log
 
       - name: List outputs
+        if: always()
         run: |
-          echo "==== flutter-apk ===="
+          echo "== List output folders =="
+          ls -la build/app/outputs || true
           ls -la build/app/outputs/flutter-apk || true
-          echo "==== gradle release ===="
-          ls -la android/app/build/outputs/apk/release || true
+          ls -la build/app/outputs/apk/release || true
 
-      # نرفع الـ APK إذا وُجد في مسار Flutter
       - name: Upload APK (flutter-apk path)
-        if: ${{ hashFiles('build/app/outputs/flutter-apk/app-release.apk') != '' }}
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-flutter-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: warn
 
-      # ونرفعه إذا وُجد في مسار Gradle
       - name: Upload APK (gradle path)
-        if: ${{ hashFiles('android/app/build/outputs/apk/release/app-release.apk') != '' }}
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-gradle
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: app-release-apk
+          path: build/app/outputs/apk/release/app-release.apk
+          if-no-files-found: warn
 
-      # لو ما فيه أي APK نوقف الجوب برسالة واضحة
-      - name: Fail if no APK found
-        run: |
-          if [ ! -f build/app/outputs/flutter-apk/app-release.apk ] && [ ! -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            echo "::error::APK not produced. See flutter_build.log and gradle_build.log in logs artifact."
-            exit 1
-          fi
-
-      # نرفع اللوجات دائماً لتشخيص أي مشكلة بسرعة
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -85,5 +80,4 @@ jobs:
           name: logs
           path: |
             flutter_build.log
-            android/gradle/wrapper/gradle-wrapper.properties
-            gradle_build.log
+          if-no-files-found: warn
