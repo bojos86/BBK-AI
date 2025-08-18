@@ -1,11 +1,9 @@
 name: bbk_ai_app
-description: BBK AI Mobile Banking
+description: BBK AI Mobile Banking demo
 publish_to: "none"
 
-version: 1.0.0+1
-
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -17,33 +15,10 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
-  # مولد الأيقونة
-  flutter_launcher_icons: ^0.14.4
-  # شاشة الإقلاع
-  flutter_native_splash: ^2.4.6
-
 flutter:
   uses-material-design: true
   assets:
     - assets/app_banner.png
-    - assets/app_icon.png
+    - assets/ic_launcher.png
     - assets/splash_logo.png
-
-# إعداد أيقونة التطبيق (Android)
-flutter_launcher_icons:
-  android: true
-  ios: false
-  image_path: assets/app_icon.png
-  min_sdk_android: 21
-  adaptive_icon_background: "#123D7A"   # كحلي BBK (لو عندك خلفية شفافة)
-  adaptive_icon_foreground: assets/app_icon.png
-
-# إعداد شاشة الإقلاع (Android)
-flutter_native_splash:
-  color: "#F8F2FF"              # خلفية هادئة من تصميمك
-  image: assets/splash_logo.png # شعار السلاش
-  android: true
-  ios: false
-  android_12:
-    color: "#F8F2FF"
-    image: assets/splash_logo.png
+    - assets/app_icon.png
