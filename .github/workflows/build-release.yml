@@ -22,55 +22,67 @@ jobs:
       - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
-          channel: "stable"
+          channel: stable
           flutter-version: "3.35.1"
           cache: true
 
       - name: Flutter doctor (quick)
         run: flutter doctor -v || true
 
-      - name: Get packages (clean + get)
+      - name: Pub get (clean + get)
         run: |
           flutter clean
           flutter pub get
 
-      - name: Generate splash (if configured)
+      # لو مفعّل في pubspec يتنفّذ تلقائي
+      - name: Generate native splash (if configured)
         run: |
           grep -q "flutter_native_splash" pubspec.yaml && \
           dart run flutter_native_splash:create || echo "no splash"
-
       - name: Generate launcher icons (if configured)
         run: |
           grep -q "flutter_launcher_icons" pubspec.yaml && \
           dart run flutter_launcher_icons:main || echo "no icons"
 
-      - name: Build APK (Flutter)
+      - name: Build APK (Flutter, split per ABI)
         run: |
           set -o pipefail
-          flutter build apk --release -v 2>&1 | tee flutter_build.log
+          # نبني عدة APKs لكل ABI + ممكن ينتج app-release.apk في بعض الإعدادات
+          flutter build apk --release \
+            --target-platform android-arm,android-arm64,android-x64 \
+            --split-per-abi -v 2>&1 | tee flutter_build.log
 
-      - name: List outputs
+      - name: List output folders (for debugging)
         if: always()
         run: |
-          echo "== List output folders =="
+          echo "== build/app/outputs =="
           ls -la build/app/outputs || true
+          echo "== build/app/outputs/flutter-apk =="
           ls -la build/app/outputs/flutter-apk || true
-          ls -la build/app/outputs/apk/release || true
+          echo "== app/build/outputs/apk =="
+          ls -la app/build/outputs/apk || true
+          echo "== build/app/outputs/apk =="
+          ls -la build/app/outputs/apk || true
 
-      - name: Upload APK (flutter-apk path)
+      # نرفع أي APK من مسارات Flutter أو Gradle (بالوايلدكارد)
+      - name: Upload APKs (flutter-apk glob)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-flutter-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: flutter-apk-outputs
+          path: |
+            build/app/outputs/flutter-apk/*-release.apk
+            build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: warn
 
-      - name: Upload APK (gradle path)
+      - name: Upload APKs (gradle glob - alternate)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: build/app/outputs/apk/release/app-release.apk
+          name: gradle-apk-outputs
+          path: |
+            build/app/outputs/apk/release/*.apk
+            app/build/outputs/apk/release/*.apk
           if-no-files-found: warn
 
       - name: Upload logs
@@ -78,6 +90,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: logs
-          path: |
-            flutter_build.log
+          path: flutter_build.log
           if-no-files-found: warn
