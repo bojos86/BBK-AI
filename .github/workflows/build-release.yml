@@ -11,7 +11,7 @@ jobs:
 
     env:
       JAVA_TOOL_OPTIONS: "-Xms512m -Xmx2g"
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8 -Dorg.gradle.daemon=false"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx2g -Dfile.encoding=UTF-8' -Dorg.gradle.daemon=false"
 
     steps:
       - name: Checkout
@@ -21,48 +21,37 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-          cache: 'gradle'
+          java-version: "17"
 
-      - name: Setup Flutter (stable)
+      - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: "stable"
+          flutter-version: "3.35.1"
           cache: true
 
       - name: Flutter doctor (quick)
         run: flutter doctor -v || true
 
-      - name: Accept Android licenses
-        run: |
-          yes | flutter doctor --android-licenses || true
-
-      - name: Get packages (clean + pub get)
+      - name: Pub get (clean + get)
         run: |
           flutter clean
           flutter pub get
 
-      # (اختياري) إذا مُعرّف flutter_native_splash / flutter_launcher_icons في pubspec.yaml
-      - name: Generate native splash (if configured)
-        run: |
-          grep -q "flutter_native_splash" pubspec.yaml && \
-          dart run flutter_native_splash:create || echo "no splash"
-
-      - name: Generate launcher icons (if configured)
-        run: |
-          grep -q "flutter_launcher_icons" pubspec.yaml && \
-          dart run flutter_launcher_icons:main || echo "no icons"
-
-      - name: Build APK (release, verbose) and capture logs
+      - name: Build APK (release) and capture logs
         run: |
           set -o pipefail
-          flutter build apk --release -v 2>&1 | tee flutter_build.log
+          flutter build apk --release -v 2>&1 | tee flutter_build.log || true
+          echo "---- Gradle direct (fallback) ----"
+          (cd android && ./gradlew assembleRelease --stacktrace --info 2>&1 | tee ../gradle_build.log) || true
 
       - name: Show tail logs
         if: always()
         run: |
-          echo "======== tail flutter_build.log ========"
-          tail -n 300 flutter_build.log || true
+          echo "==== flutter_build.log (tail) ===="
+          tail -n 200 flutter_build.log || true
+          echo "==== gradle_build.log (tail) ===="
+          tail -n 200 gradle_build.log || true
 
       - name: Upload logs
         if: always()
@@ -71,6 +60,7 @@ jobs:
           name: logs
           path: |
             flutter_build.log
+            gradle_build.log
 
       - name: Upload APK
         if: always()
