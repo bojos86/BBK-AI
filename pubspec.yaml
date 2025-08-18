@@ -1,51 +1,53 @@
 name: bbk_ai_app
-description: BBK AI Mobile – OCR, Payments & AI Support
+description: BBK AI Mobile app
 publish_to: "none"
+version: 1.0.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
+
+  # الأساسيات
   cupertino_icons: ^1.0.8
-  provider: ^6.1.2
   http: ^1.2.2
-  intl: ^0.19.0
-  # OCR + صورة/كاميرا
-  google_mlkit_text_recognition: ^0.13.0
-  image_picker: ^1.1.2
+  url_launcher: ^6.3.0
+
+  # الكاميرا + OCR
   camera: ^0.11.2
-  path_provider: ^2.1.4
-  path: ^1.9.0
-  # دفع (حقول بطاقة + تنسيقات)
-  mask_text_input_formatter: ^2.9.0
+  google_mlkit_text_recognition: ^0.14.0
+
+  # صور من الجهاز (اختياري مفيد)
+  image_picker: ^1.1.2
+
+  # الصلاحيات
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
 
+# أيقونة وسبلاش
+flutter_launcher_icons: 
+  android: true
+  ios: false
+  image_path: assets/ic_launcher.png
+  min_sdk_android: 23
+
+flutter_native_splash:
+  color: "#F8F2FF"
+  image: assets/splash_logo.png
+  android: true
+  ios: false
+  android_gravity: center
+
 flutter:
   uses-material-design: true
   assets:
     - assets/app_banner.png
     - assets/app_icon.png
-    - assets/splash_logo.png
     - assets/ic_launcher.png
-
-# أيقونة التطبيق
-flutter_launcher_icons:
-  android: "launcher_icon"
-  image_path: "assets/ic_launcher.png"
-  min_sdk_android: 24
-  remove_alpha_ios: true
-
-# شاشة الإطلاق
-flutter_native_splash:
-  color: "#0F3B78"
-  image: assets/splash_logo.png
-  android_gravity: center
-  android_12:
-    image: assets/splash_logo.png
-    icon_background_color: "#0F3B78"
+    - assets/splash_logo.png
