@@ -1,9 +1,9 @@
-name: Build Flutter APK (Release)
+name: Build Android (Release)
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+  push:
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -13,39 +13,79 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java 17 (Temurin)
+      - name: Set up Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: "17"
 
-      - name: Setup Flutter (stable)
+      - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
-          flutter-version: '3.35.1'
+          flutter-version: "3.35.1"
           cache: true
 
-      - name: Flutter doctor
-        run: flutter doctor -v
+      - name: Show Flutter versions
+        run: |
+          flutter --version
+          flutter doctor -v
 
-      - name: Pub get
-        run: flutter pub get
+      - name: Accept Android SDK licenses (best effort)
+        run: |
+          yes "y" | sudo ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Generate launcher icons
-        run: dart run flutter_launcher_icons
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
 
-      - name: Generate native splash
-        run: dart run flutter_native_splash:create
-
-      - name: Build APK (release, verbose)
+      - name: Install dependencies
         run: |
           flutter clean
-          flutter build apk --release -v
+          flutter pub get
+          echo "Assets directory:"
+          ls -la assets || true
+
+      # لو تستخدم flutter_native_splash / flutter_launcher_icons اشغّلهم هنا (اختياري)
+      # - name: Generate splash
+      #   run: dart run flutter_native_splash:create
+      # - name: Generate launcher icons
+      #   run: dart run flutter_launcher_icons
+
+      - name: Build APK (release, verbose) and capture full log
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          flutter build apk --release --verbose 2>&1 | tee logs/flutter_build.log
+
+      - name: Show last lines of Flutter build log
+        if: always()
+        run: |
+          echo "======== TAIL (last 400 lines) ========"
+          tail -n 400 logs/flutter_build.log || true
+          echo "======== GREP ERRORS ========"
+          (grep -nEi "(^e/| exception| error: | failure| fail| missing| not found)" logs/flutter_build.log || true) | head -n 200
+
+      - name: Fail if APK missing
+        run: |
+          if [ ! -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            echo "::error::APK not produced. See flutter_build.log in logs artifact."
+            exit 1
+          fi
+
+      - name: Upload Flutter build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter_build_log
+          path: logs/flutter_build.log
 
       - name: Upload APK artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
+          name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
