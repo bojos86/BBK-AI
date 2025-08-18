@@ -1,10 +1,9 @@
 name: bbk_ai_app
-description: BBK AI Mobile — demo shell
+description: BBK AI app
 publish_to: "none"
-version: 1.0.0+1
 
 environment:
-  sdk: ">=3.2.0 <4.0.0"
+  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -19,6 +18,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  assets:
-    # صورة البانر (حطها في assets/app_banner.png)
-    - assets/app_banner.png
+# (اختياري) لو حبيتي لاحقًا تشغلين السبلش تلقائي من الباكدج
+# flutter_native_splash:
+#   color: "#F8F2FF"
+#   android_12:
+#     background_color: "#F8F2FF"
+#   branding_mode: bottom
