@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'services/chat_service.dart';
-import 'screens/home_screen.dart';
-import 'screens/ocr_screen.dart';
-import 'screens/payment_screen.dart';
-import 'screens/support_screen.dart';
+import 'src/pages/home_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,34 +11,20 @@ class BBKAIApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = const Color(0xFF123D7A); // BBK Navy
-
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ChatService()),
-      ],
-      child: MaterialApp(
-        title: 'BBK AI',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: themeColor,
-            primary: themeColor,
-          ),
-          scaffoldBackgroundColor: const Color(0xFFF8F2FF),
-          useMaterial3: true,
-          appBarTheme: AppBarTheme(
-            backgroundColor: themeColor,
-            foregroundColor: Colors.white,
-          ),
+    const primary = Color(0xFF123D7A); // BBK blue
+    return MaterialApp(
+      title: 'BBK AI',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: primary,
+          primary: primary,
+          secondary: const Color(0xFF0D2F63),
         ),
-        routes: {
-          '/': (_) => const HomeScreen(),
-          '/ocr': (_) => const OcrScreen(),
-          '/payment': (_) => const PaymentScreen(),
-          '/support': (_) => const SupportScreen(),
-        },
+        scaffoldBackgroundColor: const Color(0xFFF4EEFF),
+        useMaterial3: true,
       ),
+      home: const HomePage(),
     );
   }
 }
