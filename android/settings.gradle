@@ -1,28 +1,16 @@
 pluginManagement {
-    def flutterSdkPath = System.getenv("FLUTTER_HOME")
-    if (flutterSdkPath == null) {
-        def properties = new Properties()
-        def localProperties = new File(rootDir, "local.properties")
-        if (localProperties.exists()) {
-            properties.load(new FileInputStream(localProperties))
-            flutterSdkPath = properties.getProperty("flutter.sdk")
-        }
-    }
-    assert flutterSdkPath != null : "Flutter SDK not found. Define FLUTTER_HOME or set flutter.sdk in local.properties"
-
-    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
     }
 }
-
-plugins {
-    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "8.7.2" apply false
-    id "org.jetbrains.kotlin.android" version "1.9.24" apply false
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
 }
-
+rootProject.name = "bbk_ai_app"   // غيّرها لو اسم مشروعك غير
 include(":app")
