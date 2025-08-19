@@ -1,53 +1,62 @@
-// File: android/app/build.gradle
+// android/app/build.gradle
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
 }
 
-def flutterVersionCode = 1
-def flutterVersionName = "1.0.0"
-
 android {
-    namespace "com.example.bbk_ai_app"   // غيّرها لو ودك
+    namespace "com.bbk.ai"
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.bbk_ai_app"  // غيّرها لباكدجك النهائي
+        applicationId "com.bbk.ai"
         minSdk 21
         targetSdk 34
-        versionCode flutterVersionCode
-        versionName flutterVersionName
+        versionCode 1
+        versionName "1.0"
+
+        // مطلوب لبعض إضافات Flutter (الكاميرا/MLKit إلخ)
         multiDexEnabled true
-        vectorDrawables.useSupportLibrary = true
     }
 
     buildTypes {
         release {
-            minifyEnabled false
-            shrinkResources false
-            // لو عندك signingConfigs release، حطها هنا
-            // signingConfig signingConfigs.release
+            // استخدم R8
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+
+            // توقيع debug افتراضيًا (بدّلها بتوقيعك الحقيقي لاحقًا)
+            signingConfig signingConfigs.debug
         }
         debug {
-            debuggable true
+            minifyEnabled false
         }
     }
 
+    // توافق Java/Kotlin
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = "17"
     }
-    packagingOptions {
+
+    packaging {
         resources {
-            excludes += ['META-INF/LICENSE*', 'META-INF/NOTICE*']
+            excludes += [
+                    "META-INF/DEPENDENCIES",
+                    "META-INF/AL2.0",
+                    "META-INF/LGPL2.1",
+            ]
         }
     }
 }
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
-    implementation "androidx.multidex:multidex:2.0.1"
+
+    // إذا كنت تستخدم MLKit/camera تأكد أن pubspec متوافق.
+    // Flutter سيدرج تبعيات androidX تلقائياً عبر الجزء الأصلي.
 }
