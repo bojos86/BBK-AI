@@ -9,10 +9,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx2g"
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx2g -Dfile.encoding=UTF-8' -Dorg.gradle.daemon=false"
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,100 +17,43 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-
-      - name: Setup Android SDK (tools + platform)
-        uses: android-actions/setup-android@v3
-        with:
-          packages: |
-            platforms;android-34
-            build-tools;34.0.0
-            platform-tools
+          java-version: "17"
 
       - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.35.1'
-          cache: true
-
-      - name: Setup Gradle (wrapper 8.3)
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: 8.3
+          flutter-version: "3.35.1"
 
       - name: Flutter doctor (quick)
         run: flutter doctor -v || true
 
-      - name: Pub get (clean + get)
-        run: |
-          flutter clean
-          flutter pub get
+      - name: Pub get
+        run: flutter pub get
 
-      # سيشتغل تلقائياً لو مذكورين في pubspec.yaml
-      - name: Generate native splash (if configured)
-        run: |
-          grep -q "flutter_native_splash" pubspec.yaml && \
-          dart run flutter_native_splash:create || echo "no splash"
+      - name: Build APK (Flutter, split per ABI)
+        run: flutter build apk --release --split-per-abi -v
 
-      - name: Generate launcher icons (if configured)
-        run: |
-          grep -q "flutter_launcher_icons" pubspec.yaml && \
-          dart run flutter_launcher_icons:main || echo "no icons"
-
-      - name: Build APK (Flutter, split per ABI) and capture logs
-        run: |
-          set -o pipefail
-          flutter build apk --release --split-per-abi --no-shrink --no-tree-shake-icons -v 2>&1 | tee flutter_build.log
-
-      # محاولة احتياطية عبر Gradle مباشرة (لن تفشل الـ job لو فشلت)
-      - name: Gradle fallback assembleRelease (non-blocking)
-        run: |
-          (cd android && ./gradlew assembleRelease --stacktrace --info 2>&1 | tee ../gradle_build.log) || true
-
-      - name: Show tail logs (for quick view)
+      - name: List output folders (for debugging)
         if: always()
         run: |
-          echo "==== tail flutter_build.log ===="
-          tail -n 300 flutter_build.log || true
-          echo "==== tail gradle_build.log ===="
-          tail -n 300 gradle_build.log || true
+          echo "== flutter-apk =="
+          ls -la build/app/outputs/flutter-apk || true
+          echo "== gradle apk =="
+          ls -la android/app/build/outputs/apk || true
 
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs
-          path: |
-            flutter_build.log
-            gradle_build.log
-
-      # ارفع أي APK سواء مساره تبع Flutter أو Gradle
       - name: Upload APKs (flutter-apk glob)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: apks-flutter
+          name: flutter-apk
           path: build/app/outputs/flutter-apk/*.apk
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
       - name: Upload APKs (gradle path - alternate)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: apks-gradle
+          name: gradle-apk
           path: android/app/build/outputs/apk/**/*.apk
-          if-no-files-found: ignore
-
-      # لو تبي تفشل الـ job إذا ما طلع ولا APK، خلّي الخطوة التالية مفعلة
-      - name: Fail if no APK produced
-        if: always()
-        run: |
-          FLUTTER_APK_COUNT=$(ls build/app/outputs/flutter-apk/*.apk 2>/dev/null | wc -l | xargs)
-          GRADLE_APK_COUNT=$(ls android/app/build/outputs/apk/**/*.apk 2>/dev/null | wc -l | xargs)
-          TOTAL=$((FLUTTER_APK_COUNT + GRADLE_APK_COUNT))
-          echo "Found $TOTAL APK(s)."
-          if [ "$TOTAL" -eq 0 ]; then
-            echo "::error::APK not produced. See logs artifacts."
-            exit 1
-          fi
+          if-no-files-found: warn
