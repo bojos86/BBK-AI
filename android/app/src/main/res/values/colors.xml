@@ -1,6 +1,6 @@
+<!-- File: android/app/src/main/res/values/colors.xml -->
 <resources>
-    <color name="bbk_primary">#0A3D6A</color>
-    <color name="bbk_background">#FFF7F9FF</color>
-    <color name="bbk_white">#FFFFFFFF</color>
-    <color name="bbk_black">#FF000000</color>
+    <color name="colorPrimary">#0B5ED7</color>
+    <color name="colorPrimaryDark">#0A58CA</color>
+    <color name="colorAccent">#66B2FF</color>
 </resources>
