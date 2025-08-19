@@ -1,28 +1,17 @@
+// File: android/settings.gradle
 pluginManagement {
-    def flutterSdkPath = {
-        def envVar = System.getenv("FLUTTER_SDK")
-        if (envVar != null && envVar.trim()) return envVar
-        def properties = new Properties()
-        def propsFile = new File(settingsDir, "local.properties")
-        if (propsFile.exists()) {
-            propsFile.withReader("UTF-8") { reader -> properties.load(reader) }
-            def sdk = properties.getProperty("flutter.sdk")
-            if (sdk != null) return sdk
-        }
-        throw new GradleException("Flutter SDK not found. Define FLUTTER_SDK env var or flutter.sdk in local.properties.")
-    }.call()
-
-    includeBuild("${flutterSdkPath}/packages/flutter_tools/gradle")
-
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
     }
 }
-
-plugins {
-    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
 }
-
-include ":app"
+rootProject.name = "bbk_ai_app"
+include(":app")
