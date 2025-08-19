@@ -1,3 +1,4 @@
+# .github/workflows/build-release.yml
 name: Build Flutter APK (Release)
 
 on:
@@ -10,8 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
@@ -25,35 +25,29 @@ jobs:
           channel: stable
           flutter-version: "3.35.1"
 
-      - name: Flutter doctor (quick)
+      - name: Flutter doctor
         run: flutter doctor -v || true
 
       - name: Pub get
         run: flutter pub get
 
-      - name: Build APK (Flutter, split per ABI)
-        run: flutter build apk --release --split-per-abi -v
+      # نبني عبر Gradle مباشرة لتأكيد المسار
+      - name: Build APK via Gradle
+        run: |
+          cd android
+          ./gradlew assembleRelease --stacktrace --info
 
-      - name: List output folders (for debugging)
+      - name: List APKs
         if: always()
         run: |
-          echo "== flutter-apk =="
-          ls -la build/app/outputs/flutter-apk || true
-          echo "== gradle apk =="
+          echo "== Gradle APKs =="
           ls -la android/app/build/outputs/apk || true
+          ls -la android/app/build/outputs/apk/release || true
 
-      - name: Upload APKs (flutter-apk glob)
-        if: always()
+      - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-apk
-          path: build/app/outputs/flutter-apk/*.apk
-          if-no-files-found: warn
-
-      - name: Upload APKs (gradle path - alternate)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gradle-apk
-          path: android/app/build/outputs/apk/**/*.apk
-          if-no-files-found: warn
+          name: app-release
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
