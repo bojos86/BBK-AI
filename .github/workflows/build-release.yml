@@ -19,14 +19,17 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Flutter (stable 3.35.1)
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
           flutter-version: "3.35.1"
+          channel: stable
 
-      - name: Flutter doctor (quick)
-        run: flutter doctor -v || true
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Flutter doctor
+        run: flutter doctor -v
 
       - name: Pub get
         run: flutter pub get
@@ -34,26 +37,8 @@ jobs:
       - name: Build APK (release)
         run: flutter build apk --release -v
 
-      - name: List APK outputs (for debugging)
-        if: always()
-        run: |
-          echo "== flutter-apk =="
-          ls -la build/app/outputs/flutter-apk || true
-          echo "== gradle apk =="
-          ls -la android/app/build/outputs/apk || true
-
-      - name: Upload APK (universal)
-        if: always()
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: warn
-
-      - name: Upload APKs (gradle fallback)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gradle-apks
-          path: android/app/build/outputs/apk/**/*.apk
-          if-no-files-found: warn
