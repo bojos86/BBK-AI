@@ -10,43 +10,76 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1) Checkout repository
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 2) Java 17 (required by modern Android Gradle)
       - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
+      # 3) Flutter SDK
       - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.35.1'
+          flutter-version: "3.35.1"
+          cache: true
 
+      # 4) Quick environment info
       - name: Flutter doctor (quick)
         run: flutter doctor -v || true
 
-      - name: Get packages
+      # 5) Get packages
+      - name: Pub get
         run: flutter pub get
 
-      # ✅ نبني بالـ Flutter — ما نستخدم gradlew
-      - name: Build APK (Flutter, split per ABI)
-        run: flutter build apk --release --split-per-abi -v
+      # 6) Build a single universal APK (simpler path)
+      - name: Build APK (universal)
+        run: |
+          set -o pipefail
+          flutter build apk --release -v 2>&1 | tee flutter_build.log
+          # Optional Gradle fallback (doesn't fail the job if missing)
+          (cd android && ./gradlew assembleRelease --stacktrace --info 2>&1 | tee ../gradle_build.log) || true
 
-      # فقط علشان نتأكد من المسارات
+      # 7) Show what was produced (debug)
       - name: List APK outputs
         if: always()
         run: |
           echo "== flutter-apk =="
           ls -la build/app/outputs/flutter-apk || true
+          echo "== gradle apk =="
+          ls -R android/app/build/outputs/apk || true
 
-      # ✅ المسار الصحيح لملفات APK التي يولدها Flutter
-      - name: Upload APKs
+      # 8) Upload the universal APK (expected path)
+      - name: Upload APK (universal)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-apks
-          path: build/app/outputs/flutter-apk/*.apk
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+
+      # 9) Also try any Gradle APKs (fallback)
+      - name: Upload APKs (gradle fallback)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-apks
+          path: android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
+
+      # 10) Upload logs for troubleshooting
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: |
+            flutter_build.log
+            gradle_build.log
+          if-no-files-found: warn
+```0
