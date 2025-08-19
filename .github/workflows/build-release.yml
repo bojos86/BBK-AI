@@ -1,4 +1,3 @@
-# .github/workflows/build-release.yml
 name: Build Flutter APK (Release)
 
 on:
@@ -11,43 +10,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
       - name: Setup Flutter (stable 3.35.1)
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.35.1"
+          flutter-version: '3.35.1'
 
-      - name: Flutter doctor
+      - name: Flutter doctor (quick)
         run: flutter doctor -v || true
 
-      - name: Pub get
+      - name: Get packages
         run: flutter pub get
 
-      # نبني عبر Gradle مباشرة لتأكيد المسار
-      - name: Build APK via Gradle
-        run: |
-          cd android
-          ./gradlew assembleRelease --stacktrace --info
+      # ✅ نبني بالـ Flutter — ما نستخدم gradlew
+      - name: Build APK (Flutter, split per ABI)
+        run: flutter build apk --release --split-per-abi -v
 
-      - name: List APKs
+      # فقط علشان نتأكد من المسارات
+      - name: List APK outputs
         if: always()
         run: |
-          echo "== Gradle APKs =="
-          ls -la android/app/build/outputs/apk || true
-          ls -la android/app/build/outputs/apk/release || true
+          echo "== flutter-apk =="
+          ls -la build/app/outputs/flutter-apk || true
 
-      - name: Upload APK
-        if: success()
+      # ✅ المسار الصحيح لملفات APK التي يولدها Flutter
+      - name: Upload APKs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: app-apks
+          path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
