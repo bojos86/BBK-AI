@@ -1,0 +1,6 @@
+<resources>
+    <color name="bbk_primary">#0A3D6A</color>
+    <color name="bbk_background">#FFF7F9FF</color>
+    <color name="bbk_white">#FFFFFFFF</color>
+    <color name="bbk_black">#FF000000</color>
+</resources>
